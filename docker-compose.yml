@@ -19,7 +19,7 @@ services:
     networks:
       - my-network
   mongo:
-    container_name: project_time_bomb_back
+    container_name: mongo_time_bomb_back
     image: mongo
     ports:
       - "27017:27017"
