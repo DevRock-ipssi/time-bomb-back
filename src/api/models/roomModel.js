@@ -17,15 +17,20 @@ const roomSchema = mongoose.Schema(
 			max: 8,
 			min: 4
 		},
-        gameMasterName: {
-            type: String,
-			required: true
-        },
+		gameMaster: {
+			type: ObjectId,
+			ref: 'User'
+		},
 
-        players: {
-            type: Array,
-            default: []
-        }
+		players: {
+			type: Array,
+			default: []
+		},
+		pin: {
+			type: String,
+			required: true,
+			unique: true
+		}
 	},
 	{ timestamps: true }
 );
