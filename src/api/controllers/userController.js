@@ -10,7 +10,7 @@ function saveUser( userData , res){
     let new_user = new User(userData);
     jwt.sign({userData}, process.env.JWT_KEY, {expiresIn: '30 days'}, (error, token) => {
         new_user.save()
-        .then(user => {    
+        .then(user => {
             res.status(201);
             res.json({token}); 
         }) 
