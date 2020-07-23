@@ -14,13 +14,6 @@ server.use(bodyParser.json());
 const cors = require('cors');
 server.use(cors());
 
-/*
-const postRoute = require('./api/routes/postRoute');
-postRoute(server);
-
-const commentRoute = require('./api/routes/commentRoute');
-commentRoute(server);
-*/
 const userRoute = require('./api/routes/userRoute');
 userRoute(server);
 
