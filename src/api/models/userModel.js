@@ -7,6 +7,7 @@ let userSchema = new Schema({
         required: true,
         unique: true
     },
+    
 })
 
 module.exports = mongoose.model('User', userSchema);
