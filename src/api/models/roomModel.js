@@ -17,20 +17,22 @@ const roomSchema = mongoose.Schema(
 			ref: 'User'
 		},
 
-		players: {
-			type: Array,
-			default: []
-		},
+		players: [
+			{
+				type: ObjectId,
+				ref: 'User'
+			}
+		],
 		pin: {
 			type: String,
 			required: true,
 			unique: true
 		},
-        waiting: {
-            type: Boolean,
-            required: true,
-            default: true
-        }
+		waiting: {
+			type: Boolean,
+			required: true,
+			default: true
+		}
 	},
 	{ timestamps: true }
 );
