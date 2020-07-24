@@ -30,7 +30,12 @@ const roomSchema = mongoose.Schema(
 			type: String,
 			required: true,
 			unique: true
-		}
+		},
+        waiting: {
+            type: Boolean,
+            required: true,
+            default: true
+        }
 	},
 	{ timestamps: true }
 );

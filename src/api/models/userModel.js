@@ -7,7 +7,10 @@ let userSchema = new Schema({
         required: true,
         unique: true
     },
-    
+/*     isGameMaster: {
+        type: Boolean,
+        default: false
+    } */
 })
 
 module.exports = mongoose.model('User', userSchema);
