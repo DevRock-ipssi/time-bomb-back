@@ -14,23 +14,22 @@ exports.authCheck = async (req) => {
 	}
 };
 
-exports.authenticateUser = async (req, res, next) => {
-	// check if user is the current logged in user
-	if (req.body.token) {
-		// pass token  in the headers instead of in the body
-		await jwt
-			.verify(req.body.token, process.env.JWT_KEY)
-			.then((result) => {
-				next();
-				console.log(result);
-			})
-			.catch((error) => {
-				console.log(error);
-				return res.status(400).json({ message: 'Le token soumis est invalide !' });
-			});
-	} else {
-		return res.status(401).send({
-			message: "Vous n'êtes pas autorisé à rejoindre la salle de jeu !<br>Veuillez vérifier votre pin !"
-		});
-	}
-};
+exports.verify_token = (req, res, next) => {
+  let token = req.headers['authorization'];
+
+  if(typeof token !== 'undefined'){
+    jwt.verify(token, process.env.JWT_KEY, (error, userData) => {
+      if(error){
+        res.status(401);
+        res.json({message: "Accès interdit"})
+      }
+      else{
+        next();
+      }
+    })
+  }
+  else{
+    res.status(401);
+    res.json({message: "Accès interdit"})
+  }
+}

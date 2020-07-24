@@ -11,6 +11,10 @@ let userSchema = new Schema({
         type: Boolean,
         default: false
     } */
+    role: {
+        type: String, 
+        default: null
+    }
 })
 
 module.exports = mongoose.model('User', userSchema);

@@ -1,12 +1,16 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel.js');
 const cryptoRandomString = require('crypto-random-string');
-const Room = require('../models/roomModel.js');
+//const Room = require('../models/roomModel.js');
+//const shortid = require('shortid');
+const Room = require('../controllers/roomController'); 
+  
 
 /**
  * Save user if not exist and create token (pseudo + pin)
  */
-function saveUser(userData, res) {
+function saveUser(userData) {
+
 	let new_user = new User(userData);
 	jwt.sign({ userData }, process.env.JWT_KEY, { expiresIn: '30 days' }, (error, token) => {
 		new_user
@@ -18,9 +22,12 @@ function saveUser(userData, res) {
 			.catch((error) => {
 				res.status(500);
 				console.log(error);
-				res.json({ message: 'Erreur serveur.' });
+					res.json({ message: 'Erreur serveur.' });
 			});
 	});
+
+
+
 }
 
 
@@ -30,6 +37,7 @@ function saveUser(userData, res) {
 exports.user_init_room = (req, res) => {
 	let new_user = new User(req.body);
 
+	//fonctionne si user existe 
 	User.findOne({ pseudo: new_user.pseudo })
 		.then((user) => {
 			//génère un pin
@@ -41,26 +49,37 @@ exports.user_init_room = (req, res) => {
 					pseudo: new_user.pseudo,
 					pin: pinRandom
 				};
+				
 				jwt.sign({ userData }, process.env.JWT_KEY, { expiresIn: '30 days' }, (error, token) => {
 					if (error) {
 						res.status(500);
 						console.log(error);
 						res.json({ message: 'Token invalide' });
 					} else {
-						res.json({ token }); // pseudo + pinRandom
-						//=> CRÉATION DE LA ROOM
-                        //=> A faire côté front en appelant ta route suivante '/rooms/create'
+			
+						Room.create_room(token, res); 
 					}
 				});
 			} else {
+				
 				//create user if not existe
 				let userData = {
 					pseudo: new_user.pseudo,
 					pin: pinRandom
-				};
-				saveUser(userData, res); // récupère token (pseudo + pinRandom)
-				//=> CRÉATION DE LA ROOM
-                //=> A faire côté front en appelant ta route suivante '/rooms/create'
+				}
+				
+
+					saveUser(userData, res) //récupérerer le token Faire un callback pour récupérer le token puis le transmettre 
+											// à create_room 
+
+					//=> CRÉATION DE LA ROOM
+					Room.create_room(token, res); 
+
+			
+				
+				
+			
+			
 			}
 		})
 		.catch((error) => {
@@ -70,11 +89,10 @@ exports.user_init_room = (req, res) => {
 };
 
 /**
- * Join room for user register or create user and join room
+ * Join room for user register or create user and join room (EN COURS)
  */
 exports.user_join_room = (req, res) => {
 	let { body } = req;
-	//verif si pin existe
 
 	//user exist
 	User.findOne({ pseudo: body.pseudo })
@@ -92,6 +110,7 @@ exports.user_join_room = (req, res) => {
 					} else {
 						res.json({ token });
 						// => ACCÈS À LA ROOM
+						
 						res.redirect(`/rooms/join/:${body.pin}`);
 					}
 				});
