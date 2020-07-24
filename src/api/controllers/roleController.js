@@ -38,7 +38,7 @@ exports.create_a_role = (req, res) => {
 exports.get_role = (req, res) => {
 
 
-  Role.findOne({},(error, role) => {
+  Role.find({},(error, role) => {
 
     if(error){
 
@@ -53,7 +53,7 @@ exports.get_role = (req, res) => {
     else{
 
       res.status(200);
-
+      //console.log(role[0]['name'])
       res.json(role)
 
     }

@@ -35,6 +35,6 @@ userRoute(server);
 
 server.listen(port, hostname);
 
-
 const factory = require('./factory/userFactory.js');
 factory.createRoles();
+

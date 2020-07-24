@@ -1,7 +1,7 @@
 version: '3.3'
 services:
   node:
-    container_name: time_bomb_back
+    container_name: node_time_bomb
     image: 'node:latest'
     working_dir: /home/node/app
     env_file:
@@ -19,7 +19,7 @@ services:
     networks:
       - my-network
   mongo:
-    container_name: Time_bomb_back
+    container_name: mongo_Time_bomb_back
     image: mongo
     ports:
       - "27017:27017"

@@ -10,11 +10,15 @@ let roleSchema = new Schema({
   name: {
 
     type: String,
-
-    required: "Le nom est requis"
+    unique: true
 
   },
+  ref: {
 
+    type: String,
+    unique: true
+
+  },
   max: {
 
     type: Number
