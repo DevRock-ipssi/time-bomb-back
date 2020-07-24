@@ -7,11 +7,6 @@ const roomSchema = mongoose.Schema(
 			type: String,
 			required: true
 		},
-		numberOfRounds: {
-			type: Number,
-			max: 8,
-			min: 4
-		},
 		numberOfPlayers: {
 			type: Number,
 			max: 8,

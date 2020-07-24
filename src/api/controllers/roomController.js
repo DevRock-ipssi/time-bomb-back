@@ -10,6 +10,65 @@ const MAX_PLAYERS = 8;
 const MIN_ROUNDS = 4;
 const MAX_ROUNDS = 8;
 
+
+/**
+ * Update a Room before each user's join
+ *
+ * @param {*} userData
+ * @param {*} res
+ */
+const updateRoom = async (req, res) => {
+	try {
+		if (typeof req.body.pseudo !== 'undefined') {
+			const userJoining = await User.findOne({ pseudo: req.body.pseudo }, async (err, user) => {
+				if (err) {
+					console.log(err);
+					return res.status(500).json({
+						message: 'Erreur Serveur'
+					});
+				}
+				return user;
+			});
+
+			const roomToUpdate = await Room.findOne({ pin: req.body.pin }).exec();
+
+			if (roomToUpdate) {
+				const actualPlayersInTheRoom = +roomToUpdate.players.length;
+				const initialNumOfPlayers = roomToUpdate.numberOfPlayers;
+				const isUserInRoom = roomToUpdate.players.some((val) => val.pseudo !== req.body.pseudo);
+
+				if (actualPlayersInTheRoom < initialNumOfPlayers || isUserInRoom) {
+					roomToUpdate.players.push(userJoining);
+
+					let updatedRoom = await Room.findOneAndUpdate({ pin: req.body.pin }, roomToUpdate, { new: true })
+						.exec()
+						.then((room) => room.populate('gameMaster', '_id pseudo').execPopulate());
+					return updatedRoom;
+				} else if (actualPlayersInTheRoom === initialNumOfPlayers || isUserInRoom) {
+					roomToUpdate.waiting = false;
+					let updatedRoom = await Room.findOneAndUpdate(
+						{ pin: req.body.pin },
+						roomToUpdate,
+						{ new: true }
+					)
+						.exec()
+						.then((room) => room.populate('gameMaster', '_id pseudo').execPopulate());
+					console.log('Le JEU va démarré. Le nombre de joeurs max est atteint.');
+					return updatedRoom;
+				} else {
+					return;
+				}
+			}
+		} else {
+			req.body.pin
+				? res.status(404).json({ message: 'Le pin entré est invalide !' })
+				: res.status(404).json({ message: 'Vous devez entré un pin pour accéder au jeu !' });
+		}
+	} catch (error) {
+		console.log(error.message);
+	}
+};
+
 /**
  * Create a room or return it if it exists
  *
@@ -18,53 +77,64 @@ const MAX_ROUNDS = 8;
  */
 exports.create_room = async (req, res, next) => {
 	try {
-		// verify if a token is sended by client side
-		const gameMaster = await authCheck(req); // gameMaster is the user who init the game
-		if (gameMaster) {
-			const { userData } = gameMaster;
-			//console.log('USERDATA', userData);
-			const { pseudo, pin } = userData;
+		const token = req.headers['authorization'];
+        const { userData: { pseudo, pin } } = jwt.decode(token); // retrieve user infos
 
-			// Checks if user exist in db
-			const userFomDB = await User.findOne({ pseudo }).exec();
-			if (userFomDB) {
-				// generate randomly the number of rounds and players
-				const numOfPlayers = randomInteger(MIN_PLAYERS, MAX_PLAYERS);
-				const numOfRounds = randomInteger(MIN_ROUNDS, MAX_ROUNDS); //TODO:@Mor - A Suprimer ici et au niveau du model
-				// counter users in DB to know if user is gameMaster or not
-				//const numberOfPlayersInRoom;
-				// save room in the DB if not exist or return existing one
-				const existingRoom = await Room.findOne({ pin }, async (err, room) => {
-					if (err) {
-						res.status(500).json({ room });
-					}
-
-					return (await room.execPopulate('gameMaster', '_id pseudo')).execPopulate('players', '_id pseudo'); // don't work properly
-				});
-				// Return the room if exist in DB or create it if not
-				if (existingRoom) {
-					//numOfPlayersInRoom = existingRoom.players;
-					return res.status(200).json({ room: existingRoom });
-				} else {
-					//const isGameMaster
-					new Room({
-						name: shortid.generate(),
-						numberOfPlayers: numOfPlayers,
-						numberOfRounds: numOfRounds,
-						gameMaster: userFomDB,
-						players: [ userFomDB ],
-						pin: pin
-					})
-						.save()
-						.then((room) => {
-							return res.status(201).json({ room });
-						})
-						.catch((error) => {
-							console.log(error);
-							res.status(500).json({ message: 'Erreur serveur.' });
-						});
+		// Checks if user exist in db
+		const userFomDB = await User.findOne({ pseudo }).exec();
+		if (userFomDB) {
+			// generate randomly the number of rounds and players
+			const numOfPlayers = randomInteger(MIN_PLAYERS, MAX_PLAYERS);
+			// counter users in DB to know if user is gameMaster or not
+			//const numberOfPlayersInRoom;
+			// save room in the DB if not exist or return existing one
+			const existingRoom = await Room.findOne({ pin }, async (err, room) => {
+				if (err) {
+					res.status(500).json({ room });
 				}
+
+				return (await room.execPopulate('gameMaster', '_id pseudo')).execPopulate('players', '_id pseudo'); // don't work properly
+			});
+
+            const userNotExist = await User.findOne({ pseudo }).exec();
+			// Return the room if exist in DB or create it if not
+			if (existingRoom && !userNotExist) {
+				//numOfPlayersInRoom = existingRoom.players;
+                const newUser = await User.findOne({ pseudo }).exec();
+                await Room.update(existingRoom)
+				return res.status(200).json({ room: existingRoom });
+			} else {
+				//const isGameMaster
+				new Room({
+					name: shortid.generate(),
+					numberOfPlayers: numOfPlayers,
+					numberOfRounds: numOfRounds,
+					gameMaster: userFomDB,
+					players: [ userFomDB._id ],
+					pin: pin
+				})
+					.save()
+					.then((room) => {
+						return res.status(201).json({ room });
+					})
+					.catch((error) => {
+						console.log(error);
+						res.status(500).json({ message: 'Erreur serveur.' });
+					});
 			}
+		} else {
+			let new_user = new User(req.body);
+			new_user.save((err, user) => {
+				if (err) {
+					console.log(err);
+					return res.status(500).json({
+						message: 'Erreur Serveur'
+					});
+				}
+                updateRoom(req, res); // update the room
+				return user;
+			});
+
 		}
 	} catch (error) {
 		console.log(error);
@@ -74,13 +144,38 @@ exports.create_room = async (req, res, next) => {
 	}
 };
 
-/* exports.join_a_room = async (req, res, next) => {
+
+/**
+ * Join an existing Room
+ *
+ * @param {*} req
+ * @param {*} res
+ */
+exports.join_a_room = async (req, res, next) => {
 	try {
-		res.send({ message: 'User is joining Room' });
+		/* const room = await Room.findOne({ pin: req.body.pin }, async (err, room) => {
+			if (err) {
+				console.log(err);
+				return res.status(500).json({
+					message: 'Erreur Serveur'
+				});
+			}
+			return room;
+		}).populate('gameMaster', '_id pseudo');
+
+		if (room) {
+			// call updateRoom() before
+
+			res.status(200).json({ room });
+			updateRoom()
+		} else {
+			res.status(404).json({ message: 'Le pin entré est invalide !' });
+		} */
+		updateRoom(req, res);
 	} catch (error) {
-		console.log(error.message);
+		console.log(error);
 	}
-}; */
+};
 
 /**
  * List all rooms
@@ -108,37 +203,6 @@ exports.all_rooms = async (req, res) => {
 		console.log(error);
 	}
 };
-/**
- * Join an existing Room
- *
- * @param {*} req
- * @param {*} res
- */
-exports.join_a_room = async (req, res, next) => {
-	try {
-		/* const room = await Room.findOne({ pin: req.body.pin }, async (err, room) => {
-			if (err) {
-				console.log(err);
-				return res.status(500).json({
-					message: 'Erreur Serveur'
-				});
-			}
-			return room;
-		}).populate('gameMaster', '_id pseudo');
-
-		if (room) {
-			// call updateRoom() before
-
-			res.status(200).json({ room });
-			updateRoom()
-		} else {
-			res.status(404).json({ message: 'Le pin entré est invalide !' });
-		} */
-        updateRoom(req, res);
-	} catch (error) {
-		console.log(error);
-	}
-};
 
 exports.find_room_by_pin = async function(req, res, next, pin) {
 	try {
@@ -156,65 +220,5 @@ exports.find_room_by_pin = async function(req, res, next, pin) {
 		});
 	} catch (err) {
 		next(err);
-	}
-};
-
-/**
- * Update a Room before each user's join
- *
- * @param {*} userData
- * @param {*} res
- */
-const updateRoom = async (req, res) => {
-	try {
-		if (req.body.pseudo) {
-			const userJoining = await User.findOne({ pseudo: req.body.pseudo }, async (err, user) => {
-				if (err) {
-					console.log(err);
-					return res.status(500).json({
-						message: 'Erreur Serveur'
-					});
-				}
-				return user;
-			});
-
-			const roomToUpdate = await Room.findOne({ pin: req.body.pin }).exec();
-
-			if (roomToUpdate) {
-				const actualPlayersInTheRoom = +roomToUpdate.players.length;
-				const initialNumOfPlayers = roomToUpdate.numberOfPlayers;
-				const isUserInRoom = roomToUpdate.players.some((val) => val.pseudo !== req.body.pseudo);
-
-				if (actualPlayersInTheRoom < initialNumOfPlayers || isUserInRoom) {
-					roomToUpdate.players.push(userJoining);
-
-					let updatedRoom = await Room.findOneAndUpdate(
-						{ pin: req.body.pin },
-						{ roomToUpdate },
-						{ new: true }
-					)
-						.exec()
-						.then((room) => room.populate('gameMaster', '_id pseudo').execPopulate());
-					return updatedRoom;
-				} else if (actualPlayersInTheRoom === initialNumOfPlayers || isUserInRoom) {
-					roomToUpdate.waiting = false;
-					let updatedRoom = await Room.findOneAndUpdate(
-						{ pin: req.body.pin },
-						{ ...roomToUpdate },
-						{ new: true }
-					)
-						.exec()
-						.then((room) => room.populate('gameMaster', '_id pseudo').execPopulate());
-					console.log('Le JEU va démarré. Le nombre de joeurs max est atteint.');
-					return updatedRoom;
-				} else {
-					return;
-				}
-			}
-		} else {
-			req.body.pin ? res.status(404).json({ message: 'Le pin entré est invalide !' }) : res.status(404).json({ message: 'Vous devez entré un pin pour accéder au jeu !' });
-		}
-	} catch (error) {
-		console.log(error.message);
 	}
 };

@@ -92,7 +92,7 @@ exports.user_join_room = (req, res) => {
 					} else {
 						res.json({ token });
 						// => ACCÈS À LA ROOM
-						res.redirect(`/rooms/join/:${body.pin}`);
+						res.redirect(`/rooms/join`);
 					}
 				});
 			} else {
@@ -103,7 +103,7 @@ exports.user_join_room = (req, res) => {
 				};
 				saveUser(userData, res); // récupère token (pseudo + pin d'une room déjà existante )
 				// => ACCÈS À LA ROOM
-				res.redirect(`/rooms/join/:${body.pin}`);
+				res.redirect(`/rooms/join`);
 			}
 		})
 		.catch((error) => {
