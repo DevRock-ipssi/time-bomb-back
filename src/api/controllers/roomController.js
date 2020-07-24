@@ -123,8 +123,10 @@ exports.all_rooms = async (req, res) => {
  * @param {*} res
  */
 exports.join_a_room = async (req, res, next) => {
-	/* try {
+/* 
+	try {
 		const room = await Room.findOne({ pin: req.body.pin }, async (err, room) => {
+
 			if (err) {
 				console.log(err);
 				return res.status(500).json({
@@ -138,9 +140,11 @@ exports.join_a_room = async (req, res, next) => {
 			// call updateRoom() before
 
 			res.status(200).json({ room });
+			updateRoom()
 		} else {
 			res.status(404).json({ message: 'Le pin entré est invalide !' });
-		}
+		} 
+        updateRoom(req, res);
 	} catch (error) {
 		console.log(error);
 	} */
@@ -194,10 +198,10 @@ exports.find_room_by_pin = async function(req, res, next, pin) {
  * @param {*} userData
  * @param {*} res
  */
-const updateRoom = async (userData, res) => {
+const updateRoom = async (req, res) => {
 	try {
-		if (userData !== null) {
-			const userJoining = await User.findOne({ pseudo: userData.pseudo }, async (err, user) => {
+		if (req.body.pseudo) {
+			const userJoining = await User.findOne({ pseudo: req.body.pseudo }, async (err, user) => {
 				if (err) {
 					console.log(err);
 					return res.status(500).json({
@@ -207,18 +211,19 @@ const updateRoom = async (userData, res) => {
 				return user;
 			});
 
-			const roomToUpdate = await Room.findOne({ pin: userData.pin }).exec();
+			const roomToUpdate = await Room.findOne({ pin: req.body.pin }).exec();
+
 			if (roomToUpdate) {
 				const actualPlayersInTheRoom = +roomToUpdate.players.length;
 				const initialNumOfPlayers = roomToUpdate.numberOfPlayers;
-				const isUserInRoom = roomToUpdate.players.some((val) => val.pseudo !== userData.pseudo);
+				const isUserInRoom = roomToUpdate.players.some((val) => val.pseudo !== req.body.pseudo);
 
 				if (actualPlayersInTheRoom < initialNumOfPlayers || isUserInRoom) {
 					roomToUpdate.players.push(userJoining);
 
-					let updatedRoom = await Team.findOneAndUpdate(
-						{ pin: userData.pin },
-						{ ...roomToUpdate },
+					let updatedRoom = await Room.findOneAndUpdate(
+						{ pin: req.body.pin },
+						{ roomToUpdate },
 						{ new: true }
 					)
 						.exec()
@@ -226,8 +231,8 @@ const updateRoom = async (userData, res) => {
 					return updatedRoom;
 				} else if (actualPlayersInTheRoom === initialNumOfPlayers || isUserInRoom) {
 					roomToUpdate.waiting = false;
-					let updatedRoom = await Team.findOneAndUpdate(
-						{ pin: userData.pin },
+					let updatedRoom = await Room.findOneAndUpdate(
+						{ pin: req.body.pin },
 						{ ...roomToUpdate },
 						{ new: true }
 					)
@@ -239,6 +244,8 @@ const updateRoom = async (userData, res) => {
 					return;
 				}
 			}
+		} else {
+			req.body.pin ? res.status(404).json({ message: 'Le pin entré est invalide !' }) : res.status(404).json({ message: 'Vous devez entré un pin pour accéder au jeu !' });
 		}
 	} catch (error) {
 		console.log(error.message);
