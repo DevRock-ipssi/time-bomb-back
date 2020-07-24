@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel.js');
 const cryptoRandomString = require('crypto-random-string');
+const Room = require('../models/roomModel.js');
 
 /**
  * Save user if not exist and create token (pseudo + pin)
@@ -21,6 +22,7 @@ function saveUser(userData, res) {
 			});
 	});
 }
+
 
 /**
  * Create pin room for user or register user and create a pin (GameMaster)
@@ -47,6 +49,7 @@ exports.user_init_room = (req, res) => {
 					} else {
 						res.json({ token }); // pseudo + pinRandom
 						//=> CRÉATION DE LA ROOM
+                        //=> A faire côté front en appelant ta route suivante '/rooms/create'
 					}
 				});
 			} else {
@@ -57,6 +60,7 @@ exports.user_init_room = (req, res) => {
 				};
 				saveUser(userData, res); // récupère token (pseudo + pinRandom)
 				//=> CRÉATION DE LA ROOM
+                //=> A faire côté front en appelant ta route suivante '/rooms/create'
 			}
 		})
 		.catch((error) => {
@@ -88,7 +92,7 @@ exports.user_join_room = (req, res) => {
 					} else {
 						res.json({ token });
 						// => ACCÈS À LA ROOM
-                        res.redirect(`/rooms/join/:${body.pin}`);
+						res.redirect(`/rooms/join/:${body.pin}`);
 					}
 				});
 			} else {
@@ -99,7 +103,7 @@ exports.user_join_room = (req, res) => {
 				};
 				saveUser(userData, res); // récupère token (pseudo + pin d'une room déjà existante )
 				// => ACCÈS À LA ROOM
-                res.redirect(`/rooms/join/:${body.pin}`);
+				res.redirect(`/rooms/join/:${body.pin}`);
 			}
 		})
 		.catch((error) => {

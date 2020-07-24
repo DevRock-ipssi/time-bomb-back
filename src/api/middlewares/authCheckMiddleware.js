@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-exports.authCheck = async (req, res, next) => {
+exports.authCheck = async (req) => {
 	if (req.body.token) {
 		const currentUser = await jwt.verify(req.body.token, process.env.JWT_KEY);
 		// check token validity
