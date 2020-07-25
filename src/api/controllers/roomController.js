@@ -192,8 +192,8 @@ const updateRoom = async (userData, res) => {
 
 	
 	try {
-		if (userData !== null) {
-			const userJoining = await User.findOne({ pseudo: userData.pseudo }, async (err, user) => {
+		if (req.body.pseudo) {
+			const userJoining = await User.findOne({ pseudo: req.body.pseudo }, async (err, user) => {
 				if (err) {
 					console.log(err);
 					return res.status(500).json({
@@ -251,6 +251,8 @@ const updateRoom = async (userData, res) => {
 				}
 				
 			}
+		} else {
+			req.body.pin ? res.status(404).json({ message: 'Le pin entré est invalide !' }) : res.status(404).json({ message: 'Vous devez entré un pin pour accéder au jeu !' });
 		}
 	} catch (error) {
 		console.log("erreur");

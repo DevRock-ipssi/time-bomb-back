@@ -1,8 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel.js');
 const cryptoRandomString = require('crypto-random-string');
-//const Room = require('../models/roomModel.js');
-//const shortid = require('shortid');
 const Room = require('../controllers/roomController'); 
   
 
