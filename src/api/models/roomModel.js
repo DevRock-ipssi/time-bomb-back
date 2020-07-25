@@ -9,13 +9,11 @@ const roomSchema = mongoose.Schema(
 		},
 		numberOfRounds: {
 			type: Number,
-			max: 8,
-			min: 4
+			default : 4
 		},
 		numberOfPlayers: {
 			type: Number,
-			max: 8,
-			min: 4
+			default : 8
 		},
 		gameMaster: {
 			type: ObjectId,
