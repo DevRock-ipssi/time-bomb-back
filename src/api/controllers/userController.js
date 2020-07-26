@@ -31,7 +31,6 @@ function saveUser(userData , callback) {
  */
 exports.user_init_room = (req, res) => {
 	let new_user = new User(req.body);
-
 	
 	User.findOne({ pseudo: new_user.pseudo })
 		.then((user) => {
@@ -76,7 +75,7 @@ exports.user_init_room = (req, res) => {
 };
 
 /**
- * Join room for user register or create user and join room (EN)
+ * Join room for user register or create user and join room 
  */
 exports.user_join_room = (req, res) => {
 	let { body } = req;
@@ -130,3 +129,6 @@ exports.find_all_user = (req, res) => {
 			res.json({ message: 'liste vide' });
 		});
 };
+
+
+
