@@ -2,8 +2,7 @@ const shortid = require('shortid');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel.js');
 const Room = require('../models/roomModel');
-const { authCheck } = require('../middlewares/authCheckMiddleware');
-const { randomInteger } = require('../helpers/index.js');
+const Role = require('../controllers/roleController'); 
 
 
 
@@ -184,7 +183,7 @@ exports.find_room_by_pin = async function(req, res) {
 				});			
 			
 			}else{
-				res.status(500).json({message : "Une erreur est survenue , veuillez re-essayer ultérieurement." })
+				res.status(500).json({message : "Une erreur est survenue , veuillez re-essayer ultérieurement" })
 			}
 		
 		})
@@ -196,6 +195,35 @@ exports.find_room_by_pin = async function(req, res) {
 	}
 };
 
+
+
+
+
+/**
+ * gameMaster start game
+ * @param {*} req 
+ * @param {*} res 
+ */
+exports.start_game = (req , res) =>{
+
+	//ToDo controller if gameMaster 
+
+	Room.findOne({pin : req.params.room_pin })
+	.then((room) =>{
+
+		//distribution des roles 	
+		Role.distribution_of_roles(room, res); 
+		
+		//distribution des cartes 
+
+	})
+	.catch((error) =>{
+		res.status(500).json({message : "Pin invalide !"})
+	})
+
+	
+
+}
 
 
 /**
@@ -274,3 +302,6 @@ const updateRoom = async (userData , token, res) => {
 		res.status(500).json({ erreur: 'Erreur serveur' })
 	}
 };
+
+
+
