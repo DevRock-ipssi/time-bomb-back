@@ -14,6 +14,8 @@ exports.authCheck = async (req) => {
 	}
 };
 
+
+
 exports.verify_token = (req, res, next) => {
   let token = req.headers['authorization'];
 
