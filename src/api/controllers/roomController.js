@@ -28,7 +28,7 @@ exports.create_room = (token , res) => {
 				User.findOne({ pseudo: user_info_decode.userData.pseudo})
 					.then((user) => {	
 						
-						// save room in the DB if not exist or return existing one
+						// save room in the DB if not exist or return existing one ?? LA ROOM N'EST PAS CESSÉE EXISTER
 						Room.findOne({ pin : user_info_decode.userData.pin})
 						.then((room) =>{
 
@@ -59,7 +59,7 @@ exports.create_room = (token , res) => {
 								new_room
 								.save()
 								.then((info) => {
-									return res.status(201).json({ info});
+									return res.status(201).json({ info ,token });
 								})
 								.catch((error) => {
 									console.log(error);
@@ -163,24 +163,57 @@ exports.join_a_room = (token , res) => {
 
 
 
-exports.find_room_by_pin = async function(req, res, next, pin) {
+/**
+ * find room by pin for user
+ * @param {*} req 
+ * @param {*} res 
+ */
+exports.find_room_by_pin = async function(req, res) {
 	try {
-		// verify if a token is sended by client side
-		const gameMaster = await authCheck(req, res); // gameMaster iss the person who init the game
+	
+		let pin = req.params.room_pin;
+		let user_id = req.params._id; 
 
-		await Room.findOne({ pin }).exec((err, room) => {
-			if (err || !room) {
-				return res.status(400).json({
-					message: "Cette salle de jeu n'existe pas !"
+		Room.findOne({ pin: pin })
+		.then((room) => {
+			if(room){
+			
+				
+				User.findById({ _id: user_id})
+				.then(user =>{
+
+				
+					//vérification si id_user dans la room 
+					room.players.forEach(element => {
+				
+						if(String(element._id) === String(user._id)){
+							res.status(200).json({room , user})
+						}else{
+							res.status(401).json({message : "Vous n'êtes pas inscrit à cette partie"})
+						}				
+					});			
+
+				})
+				.catch((error) => {
+					res.status(500).json({message : "Une erreur est survenue , veuillez re-essayer ultérieurement." })
+
 				});
+				
+			
+			}else{
+				res.status(500).json({message : "Une erreur est survenue , veuillez re-essayer ultérieurement." })
 			}
-			req.room = room; // adds room object to req with Room infos
-			next();
+		
+		})
+		.catch((error) => {
+			res.status(500).json({message : "Une erreur est survenue , veuillez re-essayer ultérieurement." })
 		});
 	} catch (err) {
 		next(err);
 	}
 };
+
+
 
 /**
  * Update a Room before each user's join
@@ -192,8 +225,8 @@ const updateRoom = async (userData, res) => {
 
 	
 	try {
-		if (req.body.pseudo) {
-			const userJoining = await User.findOne({ pseudo: req.body.pseudo }, async (err, user) => {
+		if (userData !== null) {
+			const userJoining = await User.findOne({ pseudo: userData.pseudo }, async (err, user) => {
 				if (err) {
 					console.log(err);
 					return res.status(500).json({
@@ -229,32 +262,32 @@ const updateRoom = async (userData, res) => {
 						  res.status(500);
 						  console.log(error);
 						  res.json({message: "Erreur serveur."})
+						  res.status(500).json({ message: "Erreur serveur."})
 						}
 						else {
-						  res.status(200);
-						  res.json(room);
+						  res.status(200).json({ message: "Félicitation " + userData.pseudo + " votre inscription est validée !" , room })
 						}
 					})
 
 				} 
 				else if (actualPlayersInTheRoom > 8 && isUserInRoom == false ) {
-	
-					res.json({message : 'Nombre de participant maximal atteint, vous ne pouvez plus intégrer la partie' });
+					res.status(200).json({ message: "Désolé le nombre de participant maximal est atteint, vous ne pouvez plus intégrer la partie" });
 
 				} else if(isUserInRoom == true) {
 					
 					res.json({message: "Vous êtes déjà inscrit"})
 				
 				}else if (roomToUpdate.waiting == false ) { 
-					res.json({message : 'Le JEU va démarré. Vous ne pouvez plus intégrer la partie' });
+					res.status(200).json({ message: "Le JEU va démarré. Vous ne pouvez plus intégrer la partie" });
+
 
 				}
 				
 			}
 		} else {
-			req.body.pin ? res.status(404).json({ message: 'Le pin entré est invalide !' }) : res.status(404).json({ message: 'Vous devez entré un pin pour accéder au jeu !' });
+			userData.pin ? res.status(404).json({ message: 'Le pin entré est invalide !' }) : res.status(404).json({ message: 'Vous devez entré un pin pour accéder au jeu !' });
 		}
 	} catch (error) {
-		console.log("erreur");
+		res.status(500).json({ message: 'Erreur serveur' })
 	}
 };
