@@ -54,7 +54,6 @@ exports.create_room = (token , res) => {
 								}; 	
 							 
 	
-								//const isGameMaster
 								let new_room = new Room(user_data); 
 								new_room
 								.save()
@@ -128,19 +127,12 @@ exports.join_a_room = (token , res) => {
 
 			const user_info_decode  = jwt.decode(token); 
 			Room.findOne({ pin: user_info_decode.userData.pin })
-			
-			//.populate('gameMaster', '_id pseudo')
-			
-			.then((room) => {
-				
-				if(room){
-					
-					updateRoom(user_info_decode.userData , res); 
+			.then((room) => {	
+				if(room){	
+					updateRoom(user_info_decode.userData , token , res); 
 				}else{
 					res.json('Le pin entré est invalide !');
-				}
-				
-				
+				}	
 			})
 			.catch((error) => {
 				console.log(error);
@@ -164,41 +156,32 @@ exports.join_a_room = (token , res) => {
 
 
 /**
- * find room by pin for user
+ * find room by pin and user
  * @param {*} req 
  * @param {*} res 
  */
 exports.find_room_by_pin = async function(req, res) {
 	try {
-	
+
 		let pin = req.params.room_pin;
 		let user_id = req.params._id; 
 
 		Room.findOne({ pin: pin })
 		.then((room) => {
-			if(room){
-			
-				
+			if(room){	
 				User.findById({ _id: user_id})
 				.then(user =>{
-
-				
+					
 					//vérification si id_user dans la room 
-					room.players.forEach(element => {
-				
-						if(String(element._id) === String(user._id)){
+					room.players.forEach(element => {	
+						if(String(element._id) === String(user._id) ){
 							res.status(200).json({room , user})
-						}else{
-							res.status(401).json({message : "Vous n'êtes pas inscrit à cette partie"})
-						}				
+						}		 			
 					});			
-
 				})
 				.catch((error) => {
-					res.status(500).json({message : "Une erreur est survenue , veuillez re-essayer ultérieurement." })
-
-				});
-				
+					res.status(500).json({message : "Ce compte n'existe pas" })
+				});			
 			
 			}else{
 				res.status(500).json({message : "Une erreur est survenue , veuillez re-essayer ultérieurement." })
@@ -206,7 +189,7 @@ exports.find_room_by_pin = async function(req, res) {
 		
 		})
 		.catch((error) => {
-			res.status(500).json({message : "Une erreur est survenue , veuillez re-essayer ultérieurement." })
+			res.status(500).json({message : "Pin non valide" })
 		});
 	} catch (err) {
 		next(err);
@@ -221,7 +204,7 @@ exports.find_room_by_pin = async function(req, res) {
  * @param {*} userData
  * @param {*} res
  */
-const updateRoom = async (userData, res) => {
+const updateRoom = async (userData , token, res) => {
 
 	
 	try {
@@ -265,7 +248,7 @@ const updateRoom = async (userData, res) => {
 						  res.status(500).json({ message: "Erreur serveur."})
 						}
 						else {
-						  res.status(200).json({ message: "Félicitation " + userData.pseudo + " votre inscription est validée !" , room })
+						  res.status(200).json({ message: "Félicitation " + userData.pseudo + " votre inscription est validée !" , room ,  userData})
 						}
 					})
 
@@ -275,19 +258,19 @@ const updateRoom = async (userData, res) => {
 
 				} else if(isUserInRoom == true) {
 					
-					res.json({message: "Vous êtes déjà inscrit"})
+					res.status(200).json({message: "vous êtes déjà inscrit !" , userJoining , token , userData , roomToUpdate })
 				
 				}else if (roomToUpdate.waiting == false ) { 
-					res.status(200).json({ message: "Le JEU va démarré. Vous ne pouvez plus intégrer la partie" });
+					res.status(200).json({ erreur: "Le JEU va démarré. Vous ne pouvez plus intégrer la partie" });
 
 
 				}
 				
 			}
 		} else {
-			userData.pin ? res.status(404).json({ message: 'Le pin entré est invalide !' }) : res.status(404).json({ message: 'Vous devez entré un pin pour accéder au jeu !' });
+			userData.pin ? res.status(404).json({ erreur: 'Le pin entré est invalide !' }) : res.status(404).json({ erreur: 'Vous devez entré un pin pour accéder au jeu !' });
 		}
 	} catch (error) {
-		res.status(500).json({ message: 'Erreur serveur' })
+		res.status(500).json({ erreur: 'Erreur serveur' })
 	}
 };
