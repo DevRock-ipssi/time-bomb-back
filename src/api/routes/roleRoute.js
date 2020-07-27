@@ -5,14 +5,13 @@ module.exports = (server) => {
   
   
   
-   server.route('/new/roles') 
+  // server.route('/new/roles') 
   
    //.get(roleController.list_all_post_roles)
   
-   .post(roleController.create_a_role);
+   //.post(roleController.create_a_role);
   
-  
-  
+
    server.route('/roles') // req.params.role_id
   
    .get(roleController.get_role)
