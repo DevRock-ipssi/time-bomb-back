@@ -5,82 +5,85 @@ const Room = require('../models/roomModel');
 const { authCheck } = require('../middlewares/authCheckMiddleware');
 const { randomInteger } = require('../helpers/index.js');
 
-const MIN_PLAYERS = 4;
-const MAX_PLAYERS = 8;
-const MIN_ROUNDS = 4;
-const MAX_ROUNDS = 8;
+
 
 /**
  * Create a room or return it if it exists
- *
- * @param {*} req
  * @param {*} res
  */
-exports.create_room = async (req, res, next) => {
-	try {
-		// verify if a token is sended by client side
-		const gameMaster = await authCheck(req); // gameMaster is the user who init the game
-		if (gameMaster) {
-			const { userData } = gameMaster;
-			//console.log('USERDATA', userData);
-			const { pseudo, pin } = userData;
+exports.create_room = (token , res) => {
+	
+	if(typeof token !== 'undefined'){
+		jwt.verify(token, process.env.JWT_KEY, (error, authData) => {
 
-			// Checks if user exist in db
-			const userFomDB = await User.findOne({ pseudo }).exec();
-			if (userFomDB) {
-				// generate randomly the number of rounds and players
-				const numOfPlayers = randomInteger(MIN_PLAYERS, MAX_PLAYERS);
-				const numOfRounds = randomInteger(MIN_ROUNDS, MAX_ROUNDS); //TODO:@Mor - A Suprimer ici et au niveau du model
-				// counter users in DB to know if user is gameMaster or not
-				//const numberOfPlayersInRoom;
-				// save room in the DB if not exist or return existing one
-				const existingRoom = await Room.findOne({ pin }, async (err, room) => {
-					if (err) {
-						res.status(500).json({ room });
-					}
+			if(error){
+				res.status(401);
+				res.json({message: "Vous n'êtes pas autorisé à accéder au jeu !<br>Veuillez vérifier votre pin !"});
+			
+			}else{
+				
+				const user_info_decode  = jwt.decode(token); // retrieve user info
 
-					return (await room.execPopulate('gameMaster', '_id pseudo')).execPopulate('players', '_id pseudo'); // don't work properly
-				});
-				// Return the room if exist in DB or create it if not
-				if (existingRoom) {
-					//numOfPlayersInRoom = existingRoom.players;
-					return res.status(200).json({ room: existingRoom });
-				} else {
-					//const isGameMaster
-					new Room({
-						name: shortid.generate(),
-						numberOfPlayers: numOfPlayers,
-						numberOfRounds: numOfRounds,
-						gameMaster: userFomDB,
-						players: [ userFomDB ],
-						pin: pin
-					})
-						.save()
-						.then((room) => {
-							return res.status(201).json({ room });
+				// Checks if user exist in db
+				User.findOne({ pseudo: user_info_decode.userData.pseudo})
+					.then((user) => {	
+						
+						// save room in the DB if not exist or return existing one ?? LA ROOM N'EST PAS CESSÉE EXISTER
+						Room.findOne({ pin : user_info_decode.userData.pin})
+						.then((room) =>{
+
+							if(room){
+								res.status(201);
+								res.json({room })
+								
+							}else{		
+
+								let players = {
+									"role" : null, 
+									"_id" : user._id, 
+									"pseudo" : user.pseudo,
+									"_v" : 0
+								}
+							
+								let user_data = {
+									name: shortid.generate(),
+									gameMaster: user,
+									players: players ,
+									pin: user_info_decode.userData.pin,
+									numberOfPlayers: 1 //init number playeur
+								}; 	
+							 
+	
+								let new_room = new Room(user_data); 
+								new_room
+								.save()
+								.then((info) => {
+									return res.status(201).json({ info ,token });
+								})
+								.catch((error) => {
+									console.log(error);
+									res.status(500).json({ message: 'Erreur serveur.' });
+								});
+								
+
+							}
+
 						})
 						.catch((error) => {
 							console.log(error);
-							res.status(500).json({ message: 'Erreur serveur.' });
+							res.json('erreur');
 						});
-				}
+				
+					})
+					.catch((error) => {
+						console.log(error);
+						res.json('user non trouvé');
+					});
 			}
-		}
-	} catch (error) {
-		console.log(error);
-		res
-			.status(401)
-			.json({ message: "Vous n'êtes pas autorisé à accéder au jeu !<br>Veuillez vérifier votre pin !" });
+		})
 	}
 };
 
-/* exports.join_a_room = async (req, res, next) => {
-	try {
-		res.send({ message: 'User is joining Room' });
-	} catch (error) {
-		console.log(error.message);
-	}
-}; */
 
 /**
  * List all rooms
@@ -108,56 +111,92 @@ exports.all_rooms = async (req, res) => {
 		console.log(error);
 	}
 };
+
+
+
 /**
  * Join an existing Room
  *
  * @param {*} req
  * @param {*} res
  */
-exports.join_a_room = async (req, res, next) => {
-	try {
-		/* const room = await Room.findOne({ pin: req.body.pin }, async (err, room) => {
-			if (err) {
-				console.log(err);
-				return res.status(500).json({
-					message: 'Erreur Serveur'
-				});
-			}
-			return room;
-		}).populate('gameMaster', '_id pseudo');
+exports.join_a_room = (token , res) => {
 
-		if (room) {
-			// call updateRoom() before
+	if(typeof token !== 'undefined'){
+		jwt.verify(token, process.env.JWT_KEY, (error, authData) => {
 
-			res.status(200).json({ room });
-			updateRoom()
-		} else {
-			res.status(404).json({ message: 'Le pin entré est invalide !' });
-		} */
-        updateRoom(req, res);
-	} catch (error) {
-		console.log(error);
+			const user_info_decode  = jwt.decode(token); 
+			Room.findOne({ pin: user_info_decode.userData.pin })
+			.then((room) => {	
+				if(room){	
+					updateRoom(user_info_decode.userData , token , res); 
+				}else{
+					res.json('Le pin entré est invalide !');
+				}	
+			})
+			.catch((error) => {
+				console.log(error);
+				res.json('Erreur serveur');
+			});
+		})
+	}else{
+		res.status(401);
+		res.json({message: "Vous n'êtes pas autorisé à accéder au jeu !<br>Veuillez vérifier votre pin !"});
+	
 	}
+
+
 };
 
-exports.find_room_by_pin = async function(req, res, next, pin) {
-	try {
-		// verify if a token is sended by client side
-		const gameMaster = await authCheck(req, res); // gameMaster iss the person who init the game
 
-		await Room.findOne({ pin }).exec((err, room) => {
-			if (err || !room) {
-				return res.status(400).json({
-					message: "Cette salle de jeu n'existe pas !"
-				});
+
+
+
+
+
+
+/**
+ * find room by pin and user
+ * @param {*} req 
+ * @param {*} res 
+ */
+exports.find_room_by_pin = async function(req, res) {
+	try {
+
+		let pin = req.params.room_pin;
+		let user_id = req.params._id; 
+
+		Room.findOne({ pin: pin })
+		.then((room) => {
+			if(room){	
+				User.findById({ _id: user_id})
+				.then(user =>{
+					
+					//vérification si id_user dans la room 
+					room.players.forEach(element => {	
+						if(String(element._id) === String(user._id) ){
+							res.status(200).json({room , user})
+						}		 			
+					});			
+				})
+				.catch((error) => {
+					res.status(500).json({message : "Ce compte n'existe pas" })
+				});			
+			
+			}else{
+				res.status(500).json({message : "Une erreur est survenue , veuillez re-essayer ultérieurement." })
 			}
-			req.room = room; // adds room object to req with Room infos
-			next();
+		
+		})
+		.catch((error) => {
+			res.status(500).json({message : "Pin non valide" })
 		});
 	} catch (err) {
 		next(err);
 	}
 };
+
+
 
 /**
  * Update a Room before each user's join
@@ -165,56 +204,73 @@ exports.find_room_by_pin = async function(req, res, next, pin) {
  * @param {*} userData
  * @param {*} res
  */
-const updateRoom = async (req, res) => {
+const updateRoom = async (userData , token, res) => {
+
+	
 	try {
-		if (req.body.pseudo) {
-			const userJoining = await User.findOne({ pseudo: req.body.pseudo }, async (err, user) => {
+		if (userData !== null) {
+			const userJoining = await User.findOne({ pseudo: userData.pseudo }, async (err, user) => {
 				if (err) {
 					console.log(err);
 					return res.status(500).json({
 						message: 'Erreur Serveur'
 					});
 				}
+				
 				return user;
 			});
-
-			const roomToUpdate = await Room.findOne({ pin: req.body.pin }).exec();
-
+			
+			const roomToUpdate = await Room.findOne({ pin: userData.pin }).exec();
 			if (roomToUpdate) {
-				const actualPlayersInTheRoom = +roomToUpdate.players.length;
-				const initialNumOfPlayers = roomToUpdate.numberOfPlayers;
-				const isUserInRoom = roomToUpdate.players.some((val) => val.pseudo !== req.body.pseudo);
+				let actualPlayersInTheRoom = roomToUpdate.players.length ; 
 
-				if (actualPlayersInTheRoom < initialNumOfPlayers || isUserInRoom) {
+				let isUserInRoom = false; 
+				
+				//vérification si user déjà présent 	
+				roomToUpdate.players.forEach(element => {
+					element.pseudo ==  userData.pseudo ? isUserInRoom = true : "";  			
+				});
+				
+				
+				// Number of playeur < 8 (nb max) and players.pseudo is not in room 
+				if (actualPlayersInTheRoom < 8 && isUserInRoom == false) {
 					roomToUpdate.players.push(userJoining);
+					actualPlayersInTheRoom ++; 
+					
+					roomToUpdate.numberOfPlayers = actualPlayersInTheRoom ; //nb players update
+					
+					actualPlayersInTheRoom == 8 ? roomToUpdate.waiting = false : ""; 
+					Room.findOneAndUpdate({ pin: userData.pin }, roomToUpdate ,  {new: true}, (error, room) => {
+						if(error){
+						  res.status(500);
+						  console.log(error);
+						  res.json({message: "Erreur serveur."})
+						  res.status(500).json({ message: "Erreur serveur."})
+						}
+						else {
+						  res.status(200).json({ message: "Félicitation " + userData.pseudo + " votre inscription est validée !" , room ,  userData})
+						}
+					})
 
-					let updatedRoom = await Room.findOneAndUpdate(
-						{ pin: req.body.pin },
-						{ roomToUpdate },
-						{ new: true }
-					)
-						.exec()
-						.then((room) => room.populate('gameMaster', '_id pseudo').execPopulate());
-					return updatedRoom;
-				} else if (actualPlayersInTheRoom === initialNumOfPlayers || isUserInRoom) {
-					roomToUpdate.waiting = false;
-					let updatedRoom = await Room.findOneAndUpdate(
-						{ pin: req.body.pin },
-						{ ...roomToUpdate },
-						{ new: true }
-					)
-						.exec()
-						.then((room) => room.populate('gameMaster', '_id pseudo').execPopulate());
-					console.log('Le JEU va démarré. Le nombre de joeurs max est atteint.');
-					return updatedRoom;
-				} else {
-					return;
+				} 
+				else if (actualPlayersInTheRoom > 8 && isUserInRoom == false ) {
+					res.status(200).json({ message: "Désolé le nombre de participant maximal est atteint, vous ne pouvez plus intégrer la partie" });
+
+				} else if(isUserInRoom == true) {
+					
+					res.status(200).json({message: "vous êtes déjà inscrit !" , userJoining , token , userData , roomToUpdate })
+				
+				}else if (roomToUpdate.waiting == false ) { 
+					res.status(200).json({ erreur: "Le JEU va démarré. Vous ne pouvez plus intégrer la partie" });
+
+
 				}
+				
 			}
 		} else {
-			req.body.pin ? res.status(404).json({ message: 'Le pin entré est invalide !' }) : res.status(404).json({ message: 'Vous devez entré un pin pour accéder au jeu !' });
+			userData.pin ? res.status(404).json({ erreur: 'Le pin entré est invalide !' }) : res.status(404).json({ erreur: 'Vous devez entré un pin pour accéder au jeu !' });
 		}
 	} catch (error) {
-		console.log(error.message);
+		res.status(500).json({ erreur: 'Erreur serveur' })
 	}
 };
