@@ -7,10 +7,6 @@ let userSchema = new Schema({
         required: true,
         unique: true
     },
-/*     isGameMaster: {
-        type: Boolean,
-        default: false
-    } */
     role: {
         type: String, 
         default: null
