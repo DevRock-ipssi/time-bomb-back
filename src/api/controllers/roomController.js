@@ -7,7 +7,7 @@ const Role = require('../controllers/roleController');
 
 
 /**
- * Create a room or return it if it exists
+ * Create a room or return it if exists
  * @param {*} res
  */
 exports.create_room = (token , res) => {
@@ -206,20 +206,22 @@ exports.find_room_by_pin = async function(req, res) {
  */
 exports.start_game = (req , res) =>{
 
-	//ToDo controller if gameMaster 
 
 	Room.findOne({pin : req.params.room_pin })
 	.then((room) =>{
-
-		//distribution des roles 	
-		Role.distribution_of_roles(room, res); 
-		
-		//distribution des cartes 
-
+		if(room.numberOfPlayers >= 4){
+			//distribution des roles 	
+			Role.distribution_of_roles(room, res); 
+			//distribution des cartes 
+		}else{
+			res.status(401).json({message : "Le nombre de joueur n'est pas suffisant pour démarrer le jeu."})
+		}
 	})
 	.catch((error) =>{
 		res.status(500).json({message : "Pin invalide !"})
 	})
+
+
 
 	
 
@@ -276,7 +278,7 @@ const updateRoom = async (userData , token, res) => {
 						  res.status(500).json({ message: "Erreur serveur."})
 						}
 						else {
-						  res.status(200).json({ message: "Félicitation " + userData.pseudo + " votre inscription est validée !" , room ,  userData})
+						  res.status(200).json({ message: "Félicitation " + userData.pseudo + " votre inscription est validée !" , room ,  userData , token})
 						}
 					})
 
