@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/userModel.js');
 const Room = require('../models/roomModel');
 const Role = require('../controllers/roleController'); 
+const Carte =  require('../controllers/carteController'); 
 
 
 
@@ -215,6 +216,7 @@ exports.start_game = (req , res) =>{
 		Role.distribution_of_roles(room, res); 
 		
 		//distribution des cartes 
+		Carte.distribution_of_cartes(room, res);
 
 	})
 	.catch((error) =>{
