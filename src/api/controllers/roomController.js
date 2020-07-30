@@ -27,7 +27,6 @@ exports.create_room = (token , res) => {
 				User.findOne({ pseudo: user_info_decode.userData.pseudo})
 					.then((user) => {	
 						
-						// save room in the DB if not exist or return existing one ?? LA ROOM N'EST PAS CESSÉE EXISTER
 						Room.findOne({ pin : user_info_decode.userData.pin})
 						.then((room) =>{
 
@@ -57,7 +56,7 @@ exports.create_room = (token , res) => {
 								new_room
 								.save()
 								.then((info) => {
-									return res.status(201).json({ info ,token });
+									res.status(201).json({ info ,token });
 								})
 								.catch((error) => {
 									console.log(error);
