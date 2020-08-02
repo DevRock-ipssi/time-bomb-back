@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/userModel.js');
 const Room = require('../models/roomModel');
 const Role = require('../controllers/roleController'); 
+const Carte =  require('../controllers/carteController'); 
 
 
 
@@ -208,10 +209,13 @@ exports.start_game = (req , res) =>{
 
 	Room.findOne({pin : req.params.room_pin })
 	.then((room) =>{
+
 		if(room.numberOfPlayers >= 4){
 			//distribution des roles 	
 			Role.distribution_of_roles(room, res); 
 			//distribution des cartes 
+      Carte.distribution_of_cartes(room, res);
+      
 		}else{
 			res.status(401).json({message : "Le nombre de joueur n'est pas suffisant pour démarrer le jeu."})
 		}
