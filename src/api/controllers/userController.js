@@ -31,47 +31,54 @@ function saveUser(userData , callback) {
  */
 exports.user_init_room = (req, res) => {
 	let new_user = new User(req.body);
-	
-	User.findOne({ pseudo: new_user.pseudo })
+	if(new_user.pseudo){
+
+		User.findOne({ pseudo: new_user.pseudo })
 		.then((user) => {
 			//génère un pin
 			let pinRandom = cryptoRandomString({ length: 10 });
-
+	
 			//if user existe
 			if (user) {
 				let userData = {
 					pseudo: new_user.pseudo,
 					pin: pinRandom
 				};
-				
+					
 				jwt.sign({ userData }, process.env.JWT_KEY, { expiresIn: '30 days' }, (error, token) => {
 					if (error) {
-						res.status(500);
-						console.log(error);
-						res.json({ message: 'Token invalide' });
+						es.status(500).json({  message: 'Token invalide' });
 					} else {
-			
+				
 						Room.create_room(token, res); 
 					}
 				});
 			} else {
-				
-				//create user if not existe + token and create room
-				let userData = {
-					pseudo: new_user.pseudo,
-					pin: pinRandom
-				}
-				
+					
+			//create user if not existe + token and create room
+			let userData = {
+				pseudo: new_user.pseudo,
+				pin: pinRandom
+			}
+					
 				saveUser(userData,  function (response){
 					Room.create_room(response, res); 
 				})		
-			
+				
 			}
 		})
 		.catch((error) => {
-			console.log(error);
-			res.json('erreur');
+			res.status(500).json({  message: 'Erreur serveur.' });
 		});
+
+	}else{
+		
+		res.status(400).json({  message: 'Veuillez saisir un pseudo' });
+		
+
+	}
+
+
 };
 
 /**
@@ -90,9 +97,7 @@ exports.user_join_room = (req, res) => {
 				};
 				jwt.sign({ userData }, process.env.JWT_KEY, { expiresIn: '30 days' }, (error, token) => {
 					if (error) {
-						res.status(500);
-						console.log(error);
-						res.json({ message: 'Token invalide' });
+						res.status(500).json({  message: 'Token invalide' });
 					} else {
 			
 						Room.join_a_room(token , res); 
@@ -112,21 +117,17 @@ exports.user_join_room = (req, res) => {
 			}
 		})
 		.catch((error) => {
-			console.log(error);
-			res.json('erreur');
+			res.status(500).json({  message: 'Erreur serveur.' });
 		});
 };
 
 exports.find_all_user = (req, res) => {
 	User.find({})
 		.then((user) => {
-			res.status(200);
-			res.json(user);
+			res.status(200).json(user);
 		})
 		.catch((error) => {
-			res.status(500);
-			console.log(error);
-			res.json({ message: 'liste vide' });
+			res.status(500).json({  message: 'liste vide' });
 		});
 };
 

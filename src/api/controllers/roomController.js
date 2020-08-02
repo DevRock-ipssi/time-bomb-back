@@ -8,7 +8,7 @@ const Carte =  require('../controllers/carteController');
 
 
 /**
- * Create a room or return it if it exists
+ * Create a room or return it if exists
  * @param {*} res
  */
 exports.create_room = (token , res) => {
@@ -28,7 +28,6 @@ exports.create_room = (token , res) => {
 				User.findOne({ pseudo: user_info_decode.userData.pseudo})
 					.then((user) => {	
 						
-						// save room in the DB if not exist or return existing one ?? LA ROOM N'EST PAS CESSÉE EXISTER
 						Room.findOne({ pin : user_info_decode.userData.pin})
 						.then((room) =>{
 
@@ -58,7 +57,7 @@ exports.create_room = (token , res) => {
 								new_room
 								.save()
 								.then((info) => {
-									return res.status(201).json({ info ,token });
+									res.status(201).json({ info ,token });
 								})
 								.catch((error) => {
 									console.log(error);
@@ -207,21 +206,25 @@ exports.find_room_by_pin = async function(req, res) {
  */
 exports.start_game = (req , res) =>{
 
-	//ToDo controller if gameMaster 
 
 	Room.findOne({pin : req.params.room_pin })
 	.then((room) =>{
 
-		//distribution des roles 	
-		Role.distribution_of_roles(room, res); 
-		
-		//distribution des cartes 
-		Carte.distribution_of_cartes(room, res);
-
+		if(room.numberOfPlayers >= 4){
+			//distribution des roles 	
+			Role.distribution_of_roles(room, res); 
+			//distribution des cartes 
+      Carte.distribution_of_cartes(room, res);
+      
+		}else{
+			res.status(401).json({message : "Le nombre de joueur n'est pas suffisant pour démarrer le jeu."})
+		}
 	})
 	.catch((error) =>{
 		res.status(500).json({message : "Pin invalide !"})
 	})
+
+
 
 	
 
@@ -278,7 +281,7 @@ const updateRoom = async (userData , token, res) => {
 						  res.status(500).json({ message: "Erreur serveur."})
 						}
 						else {
-						  res.status(200).json({ message: "Félicitation " + userData.pseudo + " votre inscription est validée !" , room ,  userData})
+						  res.status(200).json({ message: "Félicitation " + userData.pseudo + " votre inscription est validée !" , room ,  userData , token})
 						}
 					})
 

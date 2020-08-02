@@ -35,4 +35,11 @@ userRoute(server);
 const roomRoute = require('./api/routes/roomRoute');
 roomRoute(server);
 
-server.listen(port, hostname);
+
+if(!module.parent){
+	server.listen(port, hostname);
+  }
+  else {
+	module.exports = server
+  }
+  
