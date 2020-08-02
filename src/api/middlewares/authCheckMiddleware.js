@@ -31,7 +31,7 @@ exports.verify_token = (req, res, next) => {
         res.json({message: "Accès interdit"})
       }
       else{
-        next();
+        next(); //ToDo vérif pin + pseudo présent dans le token @Marlène
       }
     })
   }
@@ -65,23 +65,23 @@ exports.verify_token_gameMaster = (req, res, next) => {
             if( String(room.gameMaster) === String(user._id)){
               next();   
             }else{
-              res.status(401).json({message : "Accès interdit"})
+              res.status(403).json({message : "Accès interdit"})
             } 
             
           })
           .catch((erreur) =>{
-            res.status(500).json({message : "Erreur serveur"})
+            res.status(403).json({message : "Token invalide"})
           })
            
         })
         .catch((erreur) =>{
-          res.status(500).json({message : "Pin invalide !"})
+          res.status(403).json({message : "Pin invalide !"})
         })
        
       }
     })
   }
   else{
-    res.status(401).json({message : "Accès interdit"})
+    res.status(403).json({message : "Accès interdit"})
   }
 }
