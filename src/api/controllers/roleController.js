@@ -27,7 +27,7 @@ const getCompositionOfTeam = (numberOfPlayerInRoom ) =>{
             }
            
         });
-        const sherlock = "sherlock/"; 
+        const sherlock = "/sherlock/"; 
         const moriarty = "/moriarty/"; 
         let nbRoleSherlock = sherlock.repeat(tabcomposition.numberOfRoleSherlock);
         let nbRoleMoriarty = moriarty.repeat(tabcomposition.numberOfRoleMoriaty);
@@ -53,27 +53,26 @@ const getCompositionOfTeam = (numberOfPlayerInRoom ) =>{
  * @param {*} room 
  * @param {*} res 
  */
-exports.distribution_of_roles = (room , res) =>{
+exports.distribution_of_roles = (room) =>{
    
-   getCompositionOfTeam(room.numberOfPlayers)
-   .then((composition) =>{
-      
-        //Attribution des roles 
-        room.players.forEach(element =>{
-            let randomRole = composition[Math.floor(Math.random()*composition.length)];
-            element.role = randomRole;  //update the users in the room
-            User.findByIdAndUpdate(element._id , {role : randomRole} )
-            .then((user) =>{      
-                composition.splice(composition.indexOf(randomRole) , 1);//deleted the assigned role             
-            })
-        })
-        res.status(200).json({room , message:"Rôles attribués"})
-       
+    return new Promise(( resolve , reject) =>{
+        getCompositionOfTeam(room.numberOfPlayers)
+        .then((composition) =>{
         
-   })
-   .catch((erreur)=>{
-       res.status(500).json({message:"erreur"})
-   })
+            //Attribution des roles 
+            room.players.forEach(element =>{
+                let randomRole = composition[Math.floor(Math.random()*composition.length)];
+                element.role = randomRole;  //update the users in the room
+                composition.splice(composition.indexOf(randomRole) , 1);//deleted the assigned role
+            })
+            resolve(room);   
+        
+        })
+        .catch((erreur)=>{
+            reject("Erreur dans l'attribution des rôles");
+        })
+
+    })
   
 
 

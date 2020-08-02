@@ -10,6 +10,10 @@ let userSchema = new Schema({
     role: {
         type: String, 
         default: null
+    },
+    carte:{
+        type: Array,
+        default: []
     }
 })
 

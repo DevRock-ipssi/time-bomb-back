@@ -41,7 +41,8 @@ exports.create_room = (token , res) => {
 									"role" : null, 
 									"_id" : user._id, 
 									"pseudo" : user.pseudo,
-									"_v" : 0
+									"_v" : 0, 
+									"carte" :[]
 								}
 							
 								let user_data = {
@@ -179,16 +180,16 @@ exports.find_room_by_pin = async function(req, res) {
 					});			
 				})
 				.catch((error) => {
-					res.status(500).json({message : "Ce compte n'existe pas" })
+					res.status(401).json({message : "Ce compte n'existe pas" })
 				});			
 			
 			}else{
-				res.status(500).json({message : "Une erreur est survenue , veuillez re-essayer ultérieurement" })
+				res.status(404).json({message : "Pin invalide" })
 			}
 		
 		})
 		.catch((error) => {
-			res.status(500).json({message : "Pin non valide" })
+			res.status(500).json({message : "Erreur serveur" })
 		});
 	} catch (err) {
 		next(err);
@@ -211,11 +212,36 @@ exports.start_game = (req , res) =>{
 	.then((room) =>{
 
 		if(room.numberOfPlayers >= 4){
-			//distribution des roles 	
-			Role.distribution_of_roles(room, res); 
-			//distribution des cartes 
-      Carte.distribution_of_cartes(room, res);
-      
+			
+			//distribution of roles 
+			Role.distribution_of_roles(room)
+			.then((roomUpdate) =>{
+
+				//distribution of cartes
+				Carte.distribution_of_cartes(roomUpdate, res)
+				.then((roomUpdateAfter) =>{
+
+					roomUpdateAfter.waiting = false; // blocked room
+					roomUpdateAfter
+					.save()
+					.then((roomUp)=>{
+						res.status(200).json(roomUp); 
+					})
+					.catch((error) =>{
+						res.status(500).json({message : "Impossible de bloquer l'accès à la room"})
+					})
+				})
+				.catch((erreur) =>{
+					res.status(500).json({message : erreur })
+				})
+
+				
+			})
+			.catch((erreur) =>{
+				res.status(500).json({message : erreur})
+			})
+		
+			
 		}else{
 			res.status(401).json({message : "Le nombre de joueur n'est pas suffisant pour démarrer le jeu."})
 		}
@@ -229,6 +255,9 @@ exports.start_game = (req , res) =>{
 	
 
 }
+
+
+
 
 
 /**
@@ -266,13 +295,13 @@ const updateRoom = async (userData , token, res) => {
 				
 				
 				// Number of playeur < 8 (nb max) and players.pseudo is not in room 
-				if (actualPlayersInTheRoom < 8 && isUserInRoom == false) {
+				if (actualPlayersInTheRoom < 8 && isUserInRoom === false && roomToUpdate.waiting === true) {
 					roomToUpdate.players.push(userJoining);
 					actualPlayersInTheRoom ++; 
 					
 					roomToUpdate.numberOfPlayers = actualPlayersInTheRoom ; //nb players update
 					
-					actualPlayersInTheRoom == 8 ? roomToUpdate.waiting = false : ""; 
+					actualPlayersInTheRoom === 8 ? roomToUpdate.waiting = false : ""; 
 					Room.findOneAndUpdate({ pin: userData.pin }, roomToUpdate ,  {new: true}, (error, room) => {
 						if(error){
 						  res.status(500);
@@ -286,14 +315,14 @@ const updateRoom = async (userData , token, res) => {
 					})
 
 				} 
-				else if (actualPlayersInTheRoom > 8 && isUserInRoom == false ) {
+				else if (actualPlayersInTheRoom > 8 && isUserInRoom === false ) {
 					res.status(200).json({ message: "Désolé le nombre de participant maximal est atteint, vous ne pouvez plus intégrer la partie" });
 
-				} else if(isUserInRoom == true) {
+				} else if(isUserInRoom === true) {
 					
 					res.status(200).json({message: "vous êtes déjà inscrit !" , userJoining , token , userData , roomToUpdate })
 				
-				}else if (roomToUpdate.waiting == false ) { 
+				}else if (roomToUpdate.waiting === false ) { 
 					res.status(200).json({ erreur: "Le JEU va démarré. Vous ne pouvez plus intégrer la partie" });
 
 
