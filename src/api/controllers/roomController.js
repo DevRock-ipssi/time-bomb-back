@@ -16,8 +16,7 @@ exports.create_room = (token , res) => {
 		jwt.verify(token, process.env.JWT_KEY, (error, authData) => {
 
 			if(error){
-				res.status(401);
-				res.json({message: "Vous n'êtes pas autorisé à accéder au jeu !<br>Veuillez vérifier votre pin !"});
+				res.status(401).json({message: "Vous n'êtes pas autorisé à accéder au jeu !<br>Veuillez vérifier votre pin !"});
 			
 			}else{
 				
@@ -31,8 +30,8 @@ exports.create_room = (token , res) => {
 						.then((room) =>{
 
 							if(room){
-								res.status(201);
-								res.json({room })
+		
+								res.status(201).json({room });
 								
 							}else{		
 
@@ -56,10 +55,9 @@ exports.create_room = (token , res) => {
 								new_room
 								.save()
 								.then((info) => {
-									res.status(201).json({ info ,token });
+									res.status(200).json({ info ,token });
 								})
 								.catch((error) => {
-									console.log(error);
 									res.status(500).json({ message: 'Erreur serveur.' });
 								});
 								
@@ -68,14 +66,12 @@ exports.create_room = (token , res) => {
 
 						})
 						.catch((error) => {
-							console.log(error);
-							res.json('erreur');
+							res.status(500).json({ message: 'Erreur serveur.' });
 						});
 				
 					})
 					.catch((error) => {
-						console.log(error);
-						res.json('user non trouvé');
+						res.status(404).json({ message: 'User non trouvé' });
 					});
 			}
 		})
@@ -129,18 +125,15 @@ exports.join_a_room = (token , res) => {
 				if(room){	
 					updateRoom(user_info_decode.userData , token , res); 
 				}else{
-					res.json('Le pin entré est invalide !');
+					res.status(500).json({ message: 'Le pin entré est invalide !' });
 				}	
 			})
 			.catch((error) => {
-				console.log(error);
-				res.json('Erreur serveur');
+				res.status(500).json({ message: 'Erreur serveur.' });
 			});
 		})
 	}else{
-		res.status(401);
-		res.json({message: "Vous n'êtes pas autorisé à accéder au jeu !<br>Veuillez vérifier votre pin !"});
-	
+		res.status(401).json({ message: "Vous n'êtes pas autorisé à accéder au jeu !<br>Veuillez vérifier votre pin !" });
 	}
 
 
