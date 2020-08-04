@@ -23,7 +23,7 @@ exports.authCheck = async (req) => {
 
 exports.verify_token = (req, res, next) => {
   let token = req.headers['authorization'];
-
+  
   if(typeof token !== 'undefined'){
     jwt.verify(token, process.env.JWT_KEY, (error, userData) => {
       if(error){

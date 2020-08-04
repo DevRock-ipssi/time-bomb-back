@@ -1,4 +1,4 @@
-const User = require('../models/userModel');
+const Room = require('../models/roomModel');
 
 /**
  * Return composition of team 
@@ -60,12 +60,20 @@ exports.distribution_of_roles = (room) =>{
         .then((composition) =>{
         
             //Attribution des roles 
-            room.players.forEach(element =>{
+           room.players.forEach(element =>{
                 let randomRole = composition[Math.floor(Math.random()*composition.length)];
-                element.role = randomRole;  //update the users in the room
-                composition.splice(composition.indexOf(randomRole) , 1);//deleted the assigned role
+                element.role = randomRole; 
+                composition.splice(composition.indexOf(randomRole) , 1);//deleted the assigned role              
             })
-            resolve(room);   
+          
+            Room.findByIdAndUpdate(room._id , {players : room.players}  , {new: true}  , (erreur , room ) =>{
+                if(erreur){
+                    reject("Erreur dans l'attribution des rôles");
+                }else{
+                    resolve(room);  
+                }
+            })
+           
         
         })
         .catch((erreur)=>{

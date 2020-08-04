@@ -120,7 +120,7 @@ exports.join_a_room = (token , res) => {
 
 	if(typeof token !== 'undefined'){
 		jwt.verify(token, process.env.JWT_KEY, (error, authData) => {
-
+			console.log(authData);
 			const user_info_decode  = jwt.decode(token); 
 			Room.findOne({ pin: user_info_decode.userData.pin })
 			.then((room) => {	
@@ -149,17 +149,18 @@ exports.join_a_room = (token , res) => {
 
 
 /**
- * find room by pin and user
+ * find user profil in room
  * @param {*} req 
  * @param {*} res 
  */
-exports.find_room_by_pin = async function(req, res) {
+exports.find_user_profil_in_room = async function(req, res) {
 	try {
-
-		let pin = req.params.room_pin;
+	
 		let user_id = req.params._id; 
-
-		Room.findOne({ pin: pin })
+		let token = req.headers['authorization'];
+		const info_room  = jwt.decode(token);
+	
+		Room.findOne({ pin: info_room.userData.pin })
 		.then((room) => {
 			if(room){	
 				User.findById({ _id: user_id})
@@ -200,8 +201,9 @@ exports.find_room_by_pin = async function(req, res) {
  */
 exports.start_game = (req , res) =>{
 
-
-	Room.findOne({pin : req.params.room_pin })
+	let token = req.headers['authorization'];
+    const info_room  = jwt.decode(token);
+	Room.findOne({pin : info_room.userData.pin })
 	.then((room) =>{
 
 		if(room.numberOfPlayers >= 4){
@@ -209,11 +211,9 @@ exports.start_game = (req , res) =>{
 			//distribution of roles 
 			Role.distribution_of_roles(room)
 			.then((roomUpdate) =>{
-
 				//distribution of cartes
 				Carte.distribution_of_cartes(roomUpdate, res)
 				.then((roomUpdateAfter) =>{
-
 					roomUpdateAfter.waiting = false; // blocked room
 					roomUpdateAfter
 					.save()

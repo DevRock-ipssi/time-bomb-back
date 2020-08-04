@@ -35,6 +35,9 @@ userRoute(server);
 const roomRoute = require('./api/routes/roomRoute');
 roomRoute(server);
 
+const playingRoute = require('./api/routes/playingRoute');
+playingRoute(server);
+
 
 if(!module.parent){
 	server.listen(port, hostname);

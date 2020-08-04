@@ -1,4 +1,4 @@
-const User = require('../models/userModel');
+const Room = require('../models/roomModel');
 
 /**
  * Return list of carte
@@ -31,7 +31,7 @@ const getListOfCarte = (numberOfPlayerInRoom ) =>{
         });
         const CableSecurite = "cable_Securise/"; 
         const CableDesamorcage = "/cable_Desamorcage/"; 
-        const Bombe = "/Bombe";
+        const Bombe = "/bombe";
         let nbCableSecurite = CableSecurite.repeat(tabcarte.nbCableSecurite);
         let nbCableDesamorcage = CableDesamorcage.repeat(tabcarte.nbCableDesamorcage);
         let nbBombe = Bombe.repeat(tabcarte.nbBombe)
@@ -65,7 +65,7 @@ exports.distribution_of_cartes = (room) =>{
         getListOfCarte(room.numberOfPlayers)
         .then((list) =>{
 
-            // 5 cartes/players 
+            // 5 cards/players 
             room.players.forEach(element =>{
                 for(let i = 0 ; i < 5 ; i++){
                     let randomCarte = list[Math.floor(Math.random()*list.length)];
@@ -73,7 +73,14 @@ exports.distribution_of_cartes = (room) =>{
                     list.splice(list.indexOf(randomCarte) , 1);
                 }     
             })
-            resolve(room)              
+            Room.findByIdAndUpdate(room._id , {players : room.players}  , {new: true}  , (erreur , room ) =>{
+                if(erreur){
+                    reject("Erreur dans l'attribution des cartes");
+                }else{
+                    resolve(room);  
+                }
+            })
+                    
         })
         .catch((erreur)=>{
             reject("Erreur dans l'attribution des cartes"); 
