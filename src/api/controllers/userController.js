@@ -99,7 +99,6 @@ exports.user_join_room = (req, res) => {
 					if (error) {
 						res.status(500).json({  message: 'Token invalide' });
 					} else {
-			
 						Room.join_a_room(token , res); 
 					}
 				});
