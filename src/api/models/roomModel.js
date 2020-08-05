@@ -3,10 +3,6 @@ const { ObjectId } = mongoose.Schema;
 
 const roomSchema = mongoose.Schema(
 	{
-		name: {
-			type: String,
-			required: true
-		},
 		numberOfRounds: {
 			type: Number,
 			default : 4
@@ -14,6 +10,10 @@ const roomSchema = mongoose.Schema(
 		numberOfPlayers: {
 			type: Number,
 			default : 8
+		},
+		numberOfCardsToReturn: {
+			type: Number,
+			default: 1
 		},
 		gameMaster: {
 			type: ObjectId,
@@ -28,7 +28,15 @@ const roomSchema = mongoose.Schema(
 			type: String,
 			required: true,
 			unique: true
-		},
+		}, 
+        numberOfCarteCableDesamorcageFound:{
+			type: Number ,
+			default: 0
+        },
+        carteBombeFound:{
+            type: Boolean,
+            default: false
+        }, 
         waiting: {
             type: Boolean,
             required: true,
