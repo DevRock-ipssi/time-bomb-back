@@ -1,5 +1,6 @@
 const Room = require('../models/roomModel');
 
+
 /**
  * Return list of carte
  * @param {} numberOfPlayerInRoom 
@@ -73,6 +74,7 @@ exports.distribution_of_cartes = (room) =>{
                     list.splice(list.indexOf(randomCarte) , 1);
                 }     
             })
+            
             Room.findByIdAndUpdate(room._id , {players : room.players}  , {new: true}  , (erreur , room ) =>{
                 if(erreur){
                     reject("Erreur dans l'attribution des cartes");
