@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/userModel.js');
 const Room = require('../models/roomModel');
 const Role = require('../controllers/roleController'); 
-const Carte =  require('../controllers/carteController'); 
+const Carte = require('../controllers/carteController'); 
 
 
 
