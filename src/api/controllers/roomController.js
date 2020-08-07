@@ -204,43 +204,48 @@ exports.start_game = (req , res) =>{
 	Room.findOne({pin : info_room.userData.pin })
 	.then((room) =>{
 
-		if(room.numberOfPlayers >= 4){
-			
-			if(room.waiting === true){
+		if(room.numberOfRounds != 0){
 
-				//distribution of roles 
-				Role.distribution_of_roles(room)
-				.then((roomUpdate) =>{
-					//distribution of cartes
-					Carte.distribution_of_cartes(roomUpdate, res)
-					.then((roomUpdateAfter) =>{
-						roomUpdateAfter.waiting = false; // blocked room
-						roomUpdateAfter
-						.save()
-						.then((roomUp)=>{
-							res.status(200).json(roomUp); 
+			if(room.numberOfPlayers >= 4){
+				
+				if(room.waiting === true){
+
+					//distribution of roles 
+					Role.distribution_of_roles(room)
+					.then((roomUpdate) =>{
+						//distribution of cartes
+						Carte.distribution_of_cartes(roomUpdate, res)
+						.then((roomUpdateAfter) =>{
+							roomUpdateAfter.waiting = false; // blocked room
+							roomUpdateAfter
+							.save()
+							.then((roomUp)=>{
+								res.status(200).json(roomUp); 
+							})
+							.catch((error) =>{
+								res.status(500).json({message : "Impossible de bloquer l'accès à la room"})
+							})
 						})
-						.catch((error) =>{
-							res.status(500).json({message : "Impossible de bloquer l'accès à la room"})
+						.catch((erreur) =>{
+							res.status(500).json({message : erreur })
 						})
+
+						
 					})
 					.catch((erreur) =>{
-						res.status(500).json({message : erreur })
+						res.status(500).json({message : erreur})
 					})
 
-					
-				})
-				.catch((erreur) =>{
-					res.status(500).json({message : erreur})
-				})
-
+				}else{
+					res.status(403).json({message : "Le jeu a déjà démarré"})
+				}
+				
+				
 			}else{
-				res.status(403).json({message : "Le jeu a déjà démarré"})
+				res.status(403).json({message : "Le nombre de joueur n'est pas suffisant pour démarrer le jeu."})
 			}
-			
-			
 		}else{
-			res.status(403).json({message : "Le nombre de joueur n'est pas suffisant pour démarrer le jeu."})
+			res.status(403).json({message : "Cette partie est fini"})
 		}
 	})
 	.catch((error) =>{
@@ -321,7 +326,7 @@ const updateRoom = async (userData , token, res) => {
 						res.status(200).json({message: "vous êtes déjà inscrit !" , userJoining , token , userData , roomToUpdate })
 					
 					}else if (roomToUpdate.waiting === false ) { 
-						res.status(200).json({ message: "Le JEU va démarré. Vous ne pouvez plus intégrer la partie" });
+						res.status(200).json({ message: "Le JEU a démarré. Vous ne pouvez plus intégrer la partie" });
 					}	
 				}else{
 					res.status(403).json({ message: 'Cette partie est fini' })
