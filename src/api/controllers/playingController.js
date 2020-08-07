@@ -62,7 +62,7 @@ exports.select_player_card = (req , res) =>{
     const info_room  = jwt.decode(token);
     Room.findOne({pin : info_room.userData.pin})
     .then((room) =>{
-        //véri if round != 0 
+
         if(room.waiting === false && room.numberOfRounds != 0){
             
             room.players.forEach(player =>{  
@@ -73,13 +73,14 @@ exports.select_player_card = (req , res) =>{
                         // list of card (tab)
                         player.carte.forEach( (carte , index) =>{    
                             if(index == req.params.key){
-                                console.log("index : " + index + " key:" + req.params.key)
+                                
                                 let round = room.numberOfRounds; //nb round init = 4
                                 let numberOfCardsToReturn =  room.numberOfCardsToReturn -= 1; //nb card to return init = numberOfPlayers
                             
                                 numberOfCardsToReturn == 0 ? round -= 1 : ""; // round - 1
-                                numberOfCardsToReturn == 0 ? numberOfCardsToReturn = room.numberOfPlayers : "" ;        
-                            
+                                numberOfCardsToReturn == 0 ? numberOfCardsToReturn = room.numberOfPlayers : "" ;      
+                                
+                                
                                 if(carte ===  "cable_Securise"){
                                     player.carte.splice(req.params.key , 1); // delete card selected                                
                                     User.findOne({pseudo : player.pseudo})
@@ -175,8 +176,8 @@ exports.select_player_card = (req , res) =>{
 
 
 /**
- * 
- * @param {*} room EN COURS
+ * know who to win
+ * @param {*} room 
  */
 const getResult = (pin) =>{
     
@@ -187,14 +188,17 @@ const getResult = (pin) =>{
             if(room.numberOfCarteCableDesamorcageFound == room.numberOfPlayers){ // card desamorcage found 
                 room.numberOfRounds = 0;
                 room
-                .save();
-                resolve( room , "Félicitation l'équipe de Sherlock à gagné ! Vous avez réussi à désarmorcer la bombe"); 
+                .save()
+                .then((roomUpdate)=>{
+                    resolve({message :"Félicitation l'équipe de Sherlock à gagné ! Vous avez réussi à désarmorcer la bombe" , roomUpdate }); 
+                })
+               
        
             }else if(room.numberOfRounds == 0 && room.numberOfCarteCableDesamorcageFound != room.numberOfPlayers ){
-                resolve(room , "La bombe a éploisée ! L'équipe de Moriarty à gagné"); 
+                resolve({message : "La bombe a éploisée ! L'équipe de Moriarty à gagné" , room}); 
     
             }else{
-                resolve(room , "Le jeu continue"); 
+                resolve({message : "Le jeu continue"  , room}); 
             }
         })
         .catch((erreur) =>{
@@ -206,3 +210,7 @@ const getResult = (pin) =>{
     }); 
     
 }
+
+
+
+//retribuer les cartes à la fin d'un tour 
