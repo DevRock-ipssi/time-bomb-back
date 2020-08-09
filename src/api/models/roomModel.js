@@ -41,7 +41,11 @@ const roomSchema = mongoose.Schema(
             type: Boolean,
             required: true,
             default: true
-        }
+		}, 
+		distribution:{
+			type: Boolean,
+			default: false
+		}
 	},
 	{ timestamps: true }
 );
