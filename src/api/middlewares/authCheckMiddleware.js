@@ -84,4 +84,5 @@ exports.verify_token_gameMaster = (req, res, next) => {
   else{
     res.status(403).json({message : "Accès interdit"})
   }
+
 }

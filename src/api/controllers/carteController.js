@@ -1,4 +1,5 @@
 const Room = require('../models/roomModel');
+const jwt = require('jsonwebtoken');
 
 
 /**
@@ -56,7 +57,7 @@ const getListOfCarte = (numberOfPlayerInRoom ) =>{
 
 
 /**
- * distribution of cartes
+ * distribution of card at startup
  * @param {*} room 
  * @param {*} res 
  */
@@ -91,4 +92,113 @@ exports.distribution_of_cartes = (room) =>{
    
  
  
- }
+}
+
+
+
+
+/**
+ * distribution of card at the end of a round for gameMaster
+ * @param {*} res 
+ * @param {*} req 
+ */
+exports.distribution_of_card_end_round = (req , res) =>{
+
+    let token = req.headers['authorization'];
+    const info_room  = jwt.decode(token);
+
+    Room.findOne({pin : info_room.userData.pin })
+    .then((room) =>{
+
+        if(room.numberOfRounds !== 0 ){
+
+            if(room.distribution === true){
+            
+                //collect players' cards
+                let tabCarte = [];
+                return new Promise(( resolve , reject) =>{
+                    room.players.forEach(player =>{  
+                        player.carte.forEach( (carte) =>{    
+                            tabCarte.push(carte)
+                        })
+                    })
+                    if(tabCarte){
+                        resolve(tabCarte)
+                    }else{
+                        reject("erreur")
+                    }
+                
+                })   
+                .then((list) =>{
+                    const numberCardsPerPlayer = (list.length / room.numberOfPlayers); 
+                    let tabPlayers = []; 
+                    
+                    return new Promise(( resolve , reject) =>{
+                        room.players.forEach(element =>{
+                            
+                            //deleted player'card
+                            return new Promise((resolve , reject) =>{
+                                element.carte.length = 0; 
+                                if(element){
+                                    resolve(element)
+                                }else{
+                                    reject("erreur")
+                                }
+                            })
+                            .then((player) =>{
+                                    
+                                //distribution    
+                                for(let i = 0 ; i < numberCardsPerPlayer ; i++){   
+                                    let randomCarte = list[Math.floor(Math.random()* list.length)];
+                                    player.carte.push(randomCarte); 
+                                    list.splice(list.indexOf(randomCarte) , 1); 
+                                }
+                        
+                                tabPlayers.push(player); 
+                            
+                                if(tabPlayers){
+                                    resolve( tabPlayers)
+                                }else{
+                                    reject("Erreur dans la redistributions des cartes")
+                                }
+    
+                            })
+                        })
+    
+                    })
+                    .then((response)=>{
+                        room.distribution = false;
+                        room.save()
+                        .then(( roomUpdate) =>{
+                            res.status(200).json({message:"Les cartes ont été redistribuées. La partie continue !" , roomUpdate});  
+                        })
+                        .catch((err) => {
+                            res.status(500).json("Erreur dans la redistributions des cartes");
+                        })
+                    })  
+                        
+                })
+                .catch((err) => {
+                    res.status(500).json("Impossible de récupérer les cartes");
+                })
+    
+            }else{
+                res.status(500).json("Les cartes ont déjà été distribuées.");
+            }
+        
+
+        }else{
+            res.status(500).json("Cette partie est terminée");
+        }
+  
+    
+    
+            
+                
+    })
+    .catch((err) => {
+        res.status(500).json("Pin invalide");
+    })
+   
+   
+}

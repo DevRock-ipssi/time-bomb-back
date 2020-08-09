@@ -1,6 +1,7 @@
 const Room = require('../models/roomModel');
 const User = require('../models/userModel');
 const jwt = require('jsonwebtoken');
+const Carte = require('../controllers/carteController');
 
 
 
@@ -30,140 +31,161 @@ exports.select_a_player = (req , res) =>{
     let token = req.headers['authorization'];
     const info_room  = jwt.decode(token);
    
-    Room.findOne({pin : info_room.userData.pin})
-    .then((room) =>{
-        if(room.waiting === false){
-            room.players.forEach(element =>{
-                if( String(element._id) === String(req.params._id)){ 
-                    res.status(200).json(element.carte) // player card 
-                }             
-            })
-        }else{
-            res.status(403).json({message : "Le jeu n'a pas encore démarré"}) 
-        }
-  
-      
+    User.findById(req.params._id)
+    .then((user) => {
+
+        Room.findOne({pin : info_room.userData.pin})
+        .then((room) =>{
+            if(room.waiting === false){
+                room.players.forEach(element =>{
+                    if( String(element._id) === String(user._id)){ 
+                        res.status(200).json(element.carte) // player card 
+                    }             
+                })
+            }else{
+                res.status(403).json({message : "Le jeu n'a pas encore démarré"}) 
+            }
+    
+        
+        })
+        .catch((erreur) =>{
+            res.status(500).json({ message : "Pin invalide"})
+        })
+
     })
     .catch((erreur) =>{
-        res.status(500).json({ message : "Pin invalide"})
+        res.status(500).json({ message : "Ce joueur n'existe pas"})
     })
+
 }
 
 
 
 
 /**
- * select a player's card (gameMaster)
+ * select a player's card (gameMaster) À FINIR 
  * @param {*} req 
  * @param {*} res 
  */
 exports.select_player_card = (req , res) =>{
+
     let token = req.headers['authorization'];
     const info_room  = jwt.decode(token);
+//controler si req.params._id correspond à un joueur
     Room.findOne({pin : info_room.userData.pin})
     .then((room) =>{
 
         if(room.waiting === false && room.numberOfRounds != 0){
             
-            room.players.forEach(player =>{  
+            if(room.distribution === false){
+
            
-                if( String(player._id) === String(req.params._id)  ){   
-                    if(info_room.userData.pseudo != player.pseudo){
+                room.players.forEach(player =>{  
+            
+                    if( String(player._id) === String(req.params._id)  ){   
+                        if(info_room.userData.pseudo != player.pseudo){
 
-                        // list of card (tab)
-                        player.carte.forEach( (carte , index) =>{    
-                            if(index == req.params.key){
-                                
-                                let round = room.numberOfRounds; //nb round init = 4
-                                let numberOfCardsToReturn =  room.numberOfCardsToReturn -= 1; //nb card to return init = numberOfPlayers
-                            
-                                numberOfCardsToReturn == 0 ? round -= 1 : ""; // round - 1
-                                numberOfCardsToReturn == 0 ? numberOfCardsToReturn = room.numberOfPlayers : "" ;      
-                                
-                                
-                                if(carte ===  "cable_Securise"){
-                                    player.carte.splice(req.params.key , 1); // delete card selected                                
-                                    User.findOne({pseudo : player.pseudo})
-                                    .then((user) =>{
-                                        let dataUpdate = {
-                                            players : room.players, 
-                                            gameMaster : user._id, //change gameMaster
-                                            numberOfCardsToReturn : numberOfCardsToReturn, 
-                                            numberOfRounds : round
-                                        }
-                                        Room.findOneAndUpdate({pin : info_room.userData.pin} , dataUpdate  , {new: true}  )
-                                        .then((room) =>{
+                            // list of card 
+                            player.carte.forEach( (carte , index) =>{    
+                                if(index == req.params.key){
 
-                                            getResult(room.pin)
-                                            .then((response) =>{
-                                                res.status(200).json({cardSelect :"cable_Securise" ,response}); 
+                                    let round = room.numberOfRounds; //nb round init = 4
+                                    let numberOfCardsToReturn =  room.numberOfCardsToReturn -= 1; //nb card to return init = numberOfPlayers
+                                    let distribution = room.distribution; 
+                                    numberOfCardsToReturn == 0 ? round -= 1 : ""; // round - 1
+                                    numberOfCardsToReturn == 0 ? distribution = true : "";
+                                    numberOfCardsToReturn == 0 ? numberOfCardsToReturn = room.numberOfPlayers : "" ;      
+                                 
+                                    if(carte ===  "cable_Securise"){
+
+                                        player.carte.splice(req.params.key , 1); // delete card selected                                
+                                        User.findOne({pseudo : player.pseudo})  // vérif if user.pseudo === player.pseudo
+                                        .then((user) =>{
+                                            let dataUpdate = {
+                                                players : room.players, 
+                                                gameMaster : user._id, //change gameMaster
+                                                numberOfCardsToReturn : numberOfCardsToReturn, 
+                                                numberOfRounds : round, 
+                                                distribution : distribution
+                                            }
+                                            Room.findOneAndUpdate({pin : info_room.userData.pin} , dataUpdate  , {new: true}  )
+                                            .then((room) =>{
+
+                                                getResult(room.pin)
+                                                .then((response) =>{
+                                                    res.status(200).json({cardSelect :"cable_Securise" ,response}); 
+                                                })
+                                                .catch((erreur) =>{
+                                                    res.status(500).json({message : erreur})
+                                                })
+                                                
                                             })
-                                            .catch((erreur) =>{
-                                                res.status(500).json({message : erreur})
+                                            .catch((erreur)=>{
+                                                res.status(500).json("Erreur serveur"); 
                                             })
-                                              
                                         })
                                         .catch((erreur)=>{
                                             res.status(500).json("Erreur serveur"); 
                                         })
-                                    })
-                                    .catch((erreur)=>{
-                                        res.status(500).json("Erreur serveur"); 
-                                    })
+                                        
+                                    }else if(carte === "cable_Desamorcage"){
+                        
+                                        let updateCarte =  room.numberOfCarteCableDesamorcageFound += 1; //cpt card desamorcage
+                                        player.carte.splice(req.params.key, 1); // delete card selected 
                                     
-                                }else if(carte === "cable_Desamorcage"){
-                    
-                                    let updateCarte =  room.numberOfCarteCableDesamorcageFound += 1; //cpt card desamorcage
-                                    player.carte.splice(req.params.key, 1); // delete card selected 
-                                 
-                                    User.findOne({pseudo : player.pseudo})
-                                    .then((user) =>{
-                                        let dataUpdate = {
-                                            players : room.players, 
-                                            gameMaster : user._id, //change gameMaster
-                                            numberOfCardsToReturn : numberOfCardsToReturn, 
-                                            numberOfCarteCableDesamorcageFound : updateCarte,
-                                            numberOfRounds : round
-                                        }
-                                        Room.findOneAndUpdate({pin : info_room.userData.pin} , dataUpdate  , {new: true}  )
-                                        .then((room) =>{
+                                        User.findOne({pseudo : player.pseudo})
+                                        .then((user) =>{
+                                            let dataUpdate = {
+                                                players : room.players, 
+                                                gameMaster : user._id, //change gameMaster
+                                                numberOfCardsToReturn : numberOfCardsToReturn, 
+                                                numberOfCarteCableDesamorcageFound : updateCarte,
+                                                numberOfRounds : round, 
+                                                distribution : distribution
+                                            }
+                                            Room.findOneAndUpdate({pin : info_room.userData.pin} , dataUpdate  , {new: true}  )
+                                            .then((room) =>{
 
-                                            getResult(room.pin)
-                                            .then((response) =>{
-                                                res.status(200).json( {cardSelect : "cable_Desamorcage" , response } ); 
+                                                getResult(room.pin)
+                                                .then((response) =>{
+                                                    res.status(200).json( {cardSelect : "cable_Desamorcage" , response } ); 
+                                                })
+                                                .catch((erreur) =>{
+                                                    res.status(500).json({message : erreur})
+                                                })
+                                            
                                             })
-                                            .catch((erreur) =>{
-                                                res.status(500).json({message : erreur})
-                                            })
-                                           
                                         })
-                                    })
-                                    .catch((erreur)=>{
-                                        res.status(500).json("Erreur serveur"); 
-                                    })
-                                
-                                }else if(carte === "bombe"){
-                                    player.carte.splice(req.params.key, 1); // delete card selected 
-                                    let dataUpdate = {
-                                        carteBombeFound : true,
-                                        numberOfRounds : 0
-                                    }
-                                    Room.findOneAndUpdate({pin : info_room.userData.pin} , dataUpdate, {new: true}  )
-                                    .then((room) =>{
-                                        res.status(200).json({room, cardSelect : "bombe" , message: "La bombe a éploisée ! L'équipe de Moriarty à gagné" }); 
-                                    })
-                                    .catch((erreur)=>{
-                                        res.status(500).json("Erreur serveur"); 
-                                    })
+                                        .catch((erreur)=>{
+                                            res.status(500).json("Erreur serveur"); 
+                                        })
                                     
+                                    }else if(carte === "bombe"){
+                                        player.carte.splice(req.params.key, 1); // delete card selected 
+                                        let dataUpdate = {
+                                            carteBombeFound : true,
+                                            numberOfRounds : 0
+                                        }
+                                        Room.findOneAndUpdate({pin : info_room.userData.pin} , dataUpdate, {new: true}  )
+                                        .then((room) =>{
+                                            res.status(200).json({cardSelect : "bombe" , message: "La bombe a éploisée ! L'équipe de Moriarty à gagné"  , room}); 
+                                        })
+                                        .catch((erreur)=>{
+                                            res.status(500).json("Erreur serveur"); 
+                                        })
+                                        
+                                    }
                                 }
-                            }
-                        })
-                    }else{
-                        res.status(403).json({message : "Vous ne pouvez pas couper vos propres cartes"}) 
-                    }
-                }            
-            })
+                            })
+                        }else{
+                            res.status(403).json({message : "Vous ne pouvez pas couper vos propres cartes"}) 
+                        }
+                    }            
+                })
+
+            }else{
+                res.status(403).json({message : "Veuillez redistribuer les cartes"}) 
+            }
 
         }else if(room.waiting === true){
             res.status(403).json({message : "Le jeu n'a pas encore démarré"}) 
@@ -171,6 +193,9 @@ exports.select_player_card = (req , res) =>{
             res.status(403).json({message : "Cette partie est fini"}); 
         }
       
+    })
+    .catch((erreur) =>{
+        res.status(500).json({ message : "Pin invalide"})
     })
 }
 
@@ -212,5 +237,3 @@ const getResult = (pin) =>{
 }
 
 
-
-//retribuer les cartes à la fin d'un tour 
