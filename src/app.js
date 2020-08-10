@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 
 const db = async () => {
 	try {
-		await mongoose.connect('mongodb://mongo/time_bomb', {
+		await mongoose.connect('mongodb://mongo:27017/time_bomb', {
 			useNewUrlParser: true,
 			useUnifiedTopology: true,
 			useCreateIndex: true,
@@ -20,7 +20,7 @@ const db = async () => {
 	}
 };
 // Execute DB connection
-db();   
+db();
 
 const bodyParser = require('body-parser');
 server.use(bodyParser.urlencoded({ extended: true }));
@@ -45,4 +45,4 @@ if(!module.parent){
   else {
 	module.exports = server
   }
-  
+
