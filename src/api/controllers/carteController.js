@@ -98,7 +98,7 @@ exports.distribution_of_cartes = (room) =>{
 
 
 /**
- * distribution of card at the end of a round for gameMaster
+ * distribution of card at the end of a round 
  * @param {*} res 
  * @param {*} req 
  */
@@ -123,6 +123,7 @@ exports.distribution_of_card_end_round = (req , res) =>{
                         })
                     })
                     if(tabCarte){
+                       
                         resolve(tabCarte)
                     }else{
                         reject("erreur")
@@ -167,28 +168,28 @@ exports.distribution_of_card_end_round = (req , res) =>{
     
                     })
                     .then((response)=>{
-                        room.distribution = false;
-                        room.save()
-                        .then(( roomUpdate) =>{
-                            res.status(200).json({message:"Les cartes ont été redistribuées. La partie continue !" , roomUpdate});  
-                        })
-                        .catch((err) => {
-                            res.status(500).json("Erreur dans la redistributions des cartes");
+
+                        Room.findByIdAndUpdate( room._id , { players : response , distribution : false} , {new: true}  , (error, roomUpdate) => {
+                            if(error){
+                                res.status(500).json( {message : "Erreur dans la redistributions des cartes"});
+                            }else{
+                                res.status(200).json({message:"Les cartes ont été redistribuées. La partie continue !" , roomUpdate});  
+                            } 
                         })
                     })  
                         
                 })
                 .catch((err) => {
-                    res.status(500).json("Impossible de récupérer les cartes");
+                    res.status(500).json( { message : "Impossible de récupérer les cartes"});
                 })
     
             }else{
-                res.status(500).json("Les cartes ont déjà été distribuées.");
+                res.status(500).json({message : "Les cartes ont déjà été distribuées."});
             }
         
 
         }else{
-            res.status(500).json("Cette partie est terminée");
+            res.status(500).json({ message : "Cette partie est terminée"});
         }
   
     
