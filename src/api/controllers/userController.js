@@ -10,7 +10,7 @@ const Room = require('../controllers/roomController');
 function saveUser(userData , callback) {
 
 	let new_user = new User(userData);
-	jwt.sign({ userData }, process.env.JWT_KEY, { expiresIn: '30 days' }, (error, token) => {
+	jwt.sign({ userData }, process.env.JWT_KEY, { expiresIn: '2 days' }, (error, token) => {
 		new_user
 			.save()
 			.then((user) => {
@@ -35,6 +35,7 @@ exports.user_init_room = (req, res) => {
 
 		User.findOne({ pseudo: new_user.pseudo })
 		.then((user) => {
+
 			//génère un pin
 			let pinRandom = cryptoRandomString({ length: 10 });
 	
@@ -71,15 +72,16 @@ exports.user_init_room = (req, res) => {
 			res.status(500).json({  message: 'Erreur serveur.' });
 		});
 
-	}else{
-		
+	}else{	
 		res.status(400).json({  message: 'Veuillez saisir un pseudo' });
-		
-
 	}
 
-
 };
+
+
+
+
+
 
 /**
  * Join room for user register or create user and join room 
@@ -121,15 +123,10 @@ exports.user_join_room = (req, res) => {
 		});
 };
 
-exports.find_all_user = (req, res) => {
-	User.find({})
-		.then((user) => {
-			res.status(200).json(user);
-		})
-		.catch((error) => {
-			res.status(500).json({  message: 'liste vide' });
-		});
-};
+
+
+
+
 
 
 

@@ -5,14 +5,6 @@ const server = require('../../app');
 const jwt = require('jsonwebtoken');
 chai.use(chaiHttp);
 
-/*
-function serverError(resData){
-  resData.should.have.status(500);
-  resData.should.be.a('object');
-  resData.body.should.have.property('message');
-  resData.body.message.should.equal('Erreur serveur.');
-}
-*/
 
 
 
@@ -60,6 +52,8 @@ describe('POST /users/init-room', () => {
     })
 
 
+
+
 })
 
 
@@ -71,7 +65,7 @@ describe('POST /users/join-room', () => {
   it('should join room', (done) => {
 
       let userData = {
-          pseudo: "tonton", 
+          pseudo: "test", 
           pin:"2fadc276f6" //Pin valide
       };
       
