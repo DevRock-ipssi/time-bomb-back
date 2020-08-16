@@ -7,6 +7,14 @@ let userSchema = new Schema({
         required: true,
         unique: true
     },
+    role: {
+        type: String, 
+        default: null
+    },
+    carte:{
+        type: Array,
+        default: []
+    }
 })
 
 module.exports = mongoose.model('User', userSchema);
