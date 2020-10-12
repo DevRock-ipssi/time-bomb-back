@@ -51,7 +51,7 @@ exports.select_a_player = (req, res) => {
 };
 
 /**
- * select a player's card (gameMaster) À FINIR
+ * select a player's card (gameMaster)
  * @param {*} req
  * @param {*} res
  */
